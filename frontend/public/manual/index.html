@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="es-PE">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario — Sistema de Gestión Comercial</title>
+  <meta name="description" content="Manual de usuario oficial del Sistema de Gestión Comercial. Aprenda a utilizar todas las funcionalidades del sistema.">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       CSS RESET & BASE
+       ============================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #3b82f6;
+      --primary-bg: #eff6ff;
+      --secondary: #0f172a;
+      --accent: #f59e0b;
+      --accent-light: #fbbf24;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-300: #cbd5e1;
+      --neutral-400: #94a3b8;
+      --neutral-500: #64748b;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1e293b;
+      --neutral-900: #0f172a;
+      --sidebar-width: 280px;
+      --header-height: 64px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+    }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: var(--font-sans);
+      color: var(--neutral-800);
+      background: var(--neutral-50);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: var(--primary); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--primary-dark); }
+    img { max-width: 100%; height: auto; }
+    ::selection { background: var(--primary); color: white; }
+
+    /* ============================================
+       SCROLLBAR
+       ============================================ */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--neutral-300); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--neutral-400); }
+
+    /* ============================================
+       READING PROGRESS BAR
+       ============================================ */
+    #progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      z-index: 1001;
+      width: 0%;
+      transition: width 0.1s;
+    }
+
+    /* ============================================
+       HEADER
+       ============================================ */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-height);
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 1000;
+      gap: 16px;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--neutral-900);
+    }
+    .header-brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+    .header-badge {
+      background: var(--primary-bg);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .header-search {
+      margin-left: auto;
+      position: relative;
+      max-width: 320px;
+      width: 100%;
+    }
+    .header-search input {
+      width: 100%;
+      padding: 8px 16px 8px 38px;
+      border: 1px solid var(--neutral-200);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-family: var(--font-sans);
+      background: var(--neutral-100);
+      transition: all 0.2s;
+      outline: none;
+    }
+    .header-search input:focus {
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .header-search input::placeholder { color: var(--neutral-400); }
+    .header-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--neutral-400);
+      pointer-events: none;
+      font-size: 0.9rem;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-icon {
+      width: 36px; height: 36px;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-sm);
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--neutral-600);
+      font-size: 1rem;
+    }
+    .btn-icon:hover {
+      background: var(--neutral-100);
+      border-color: var(--neutral-300);
+    }
+
+    /* ============================================
+       SIDEBAR
+       ============================================ */
+    .sidebar {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: white;
+      border-right: 1px solid var(--neutral-200);
+      overflow-y: auto;
+      z-index: 900;
+      padding: 16px 0;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-section {
+      padding: 0 16px;
+      margin-bottom: 4px;
+    }
+    .sidebar-section-title {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--neutral-400);
+      padding: 8px 12px 6px;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--neutral-600);
+      transition: all 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .sidebar-link:hover {
+      background: var(--neutral-100);
+      color: var(--neutral-800);
+    }
+    .sidebar-link.active {
+      background: var(--primary-bg);
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .sidebar-link .num {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      background: var(--neutral-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--neutral-500);
+      flex-shrink: 0;
+    }
+    .sidebar-link.active .num {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* ============================================
+       MAIN CONTENT
+       ============================================ */
+    .main {
+      margin-left: var(--sidebar-width);
+      margin-top: var(--header-height);
+      padding: 40px 48px 80px;
+      max-width: 900px;
+      min-height: calc(100vh - var(--header-height));
+    }
+    @media (min-width: 1400px) {
+      .main { margin: 0 auto; padding-top: calc(var(--header-height) + 40px); }
+    }
+
+    /* ============================================
+       TYPOGRAPHY
+       ============================================ */
+    .hero {
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--neutral-200);
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--neutral-900);
+      line-height: 1.2;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--neutral-500);
+      font-weight: 400;
+      margin-bottom: 16px;
+    }
+    .hero-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: var(--neutral-400);
+    }
+    .hero-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+      scroll-margin-top: calc(var(--header-height) + 24px);
+    }
+    .section h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--neutral-900);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--neutral-100);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section h2 .section-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--neutral-800);
+      margin: 24px 0 12px;
+      padding-left: 0;
+    }
+    .section h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--neutral-700);
+      margin: 20px 0 8px;
+    }
+    .section p {
+      margin-bottom: 12px;
+      color: var(--neutral-600);
+    }
+    .section ul, .section ol {
+      margin: 8px 0 16px 24px;
+      color: var(--neutral-600);
+    }
+    .section li {
+      margin-bottom: 6px;
+    }
+    .section strong {
+      color: var(--neutral-800);
+      font-weight: 600;
+    }
+
+    /* ============================================
+       TABLE
+       ============================================ */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 16px 0 24px;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    thead {
+      background: var(--neutral-100);
+    }
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-weight: 600;
+      color: var(--neutral-700);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--neutral-200);
+    }
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--neutral-100);
+      color: var(--neutral-600);
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--neutral-50); }
+
+    /* ============================================
+       CALLOUTS / ALERTS
+       ============================================ */
+    .callout {
+      margin: 16px 0 24px;
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .callout-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .callout-info {
+      background: var(--primary-bg);
+      border-left: 3px solid var(--primary);
+      color: var(--primary-dark);
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 3px solid var(--accent);
+      color: #92400e;
+    }
+    .callout-danger {
+      background: var(--danger-bg);
+      border-left: 3px solid var(--danger);
+      color: #991b1b;
+    }
+    .callout-success {
+      background: var(--success-bg);
+      border-left: 3px solid var(--success);
+      color: #065f46;
+    }
+
+    /* ============================================
+       STEPS
+       ============================================ */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin: 16px 0 24px;
+    }
+    .steps li {
+      counter-increment: step;
+      padding: 12px 16px 12px 48px;
+      position: relative;
+      margin-bottom: 8px;
+      background: white;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-sm);
+      color: var(--neutral-600);
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      width: 24px;
+      height: 24px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* ============================================
+       TAGS / BADGES
+       ============================================ */
+    .tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 0 2px;
+    }
+    .tag-primary { background: var(--primary-bg); color: var(--primary); }
+    .tag-success { background: var(--success-bg); color: var(--success); }
+    .tag-danger { background: var(--danger-bg); color: var(--danger); }
+    .tag-accent { background: #fffbeb; color: #92400e; }
+
+    /* ============================================
+       KEYBOARD KEYS
+       ============================================ */
+    kbd {
+      display: inline-block;
+      padding: 2px 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: var(--neutral-100);
+      border: 1px solid var(--neutral-300);
+      border-radius: 4px;
+      box-shadow: 0 1px 0 var(--neutral-300);
+    }
+
+    /* ============================================
+       SEARCH HIGHLIGHT
+       ============================================ */
+    .search-highlight {
+      background: #fef08a;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    /* ============================================
+       TOC FIXED
+       ============================================ */
+    .toc-sticky {
+      display: none;
+    }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--neutral-200);
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--neutral-400);
+    }
+    .footer strong { color: var(--neutral-500); }
+
+    /* ============================================
+       BACK TO TOP
+       ============================================ */
+    #back-to-top {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: white;
+      border: 1px solid var(--neutral-200);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: all 0.3s;
+      z-index: 800;
+      color: var(--neutral-600);
+      font-size: 1.1rem;
+    }
+    #back-to-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #back-to-top:hover {
+      background: var(--neutral-100);
+      transform: translateY(-2px);
+    }
+
+    /* ============================================
+       SIDEBAR OVERLAY (mobile)
+       ============================================ */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 899;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 24px 20px 48px; }
+      .header-search { max-width: 200px; }
+    }
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 1.6rem; }
+      .section h2 { font-size: 1.25rem; }
+      .main { padding: 16px 16px 48px; }
+      .header { padding: 0 12px; }
+      .header-search { display: none; }
+      .hero-meta { flex-direction: column; gap: 4px; }
+    }
+    @media print {
+      .sidebar, .header, #back-to-top, #progress-bar, .sidebar-overlay,
+      .header-search, .header-actions { display: none !important; }
+      .main { margin-left: 0; margin-top: 0; padding: 20px; max-width: 100%; }
+      .section { page-break-inside: avoid; }
+      h2, h3 { page-break-after: avoid; }
+      body { font-size: 11pt; color: #000; }
+      a { color: #000; text-decoration: underline; }
+    }
+
+    /* ============================================
+       MOBILE MENU BUTTON
+       ============================================ */
+    #menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 1.3rem;
+      cursor: pointer;
+      color: var(--neutral-700);
+      padding: 4px;
+    }
+    @media (max-width: 1024px) {
+      #menu-toggle { display: block; }
+    }
+
+    /* ============================================
+       CARD GRID
+       ============================================ */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 16px 0 24px;
+    }
+    .card-grid .card {
+      background: white;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+    }
+    .card-grid .card strong {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--neutral-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .card-grid .card span {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--neutral-800);
+    }
+
+    /* Smooth mobile transitions */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- READING PROGRESS -->
+  <div id="progress-bar"></div>
+
+  <!-- HEADER -->
+  <header class="header" role="banner">
+    <button id="menu-toggle" aria-label="Abrir menú" onclick="toggleSidebar()">☰</button>
+    <div class="header-brand">
+      <div class="header-brand-icon">S</div>
+      <span>Sistema de Gestión</span>
+    </div>
+    <span class="header-badge">Manual v1.0</span>
+    <div class="header-search" role="search">
+      <span class="header-search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Buscar en el manual..." aria-label="Buscar en el manual">
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="window.print()" title="Imprimir / Guardar PDF" aria-label="Imprimir">🖨️</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR OVERLAY (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR NAVIGATION -->
+  <nav class="sidebar" id="sidebar" role="navigation" aria-label="Índice del manual">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Contenido</div>
+      <a class="sidebar-link active" href="#introduccion" data-section="introduccion">
+        <span class="num">1</span> Introducción
+      </a>
+      <a class="sidebar-link" href="#requerimientos" data-section="requerimientos">
+        <span class="num">2</span> Requerimientos
+      </a>
+      <a class="sidebar-link" href="#acceso" data-section="acceso">
+        <span class="num">3</span> Acceso al Sistema
+      </a>
+      <a class="sidebar-link" href="#configuracion" data-section="configuracion">
+        <span class="num">4</span> Configuración Inicial
+      </a>
+      <a class="sidebar-link" href="#dashboard" data-section="dashboard">
+        <span class="num">5</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="#productos" data-section="productos">
+        <span class="num">6</span> Productos
+      </a>
+      <a class="sidebar-link" href="#categorias" data-section="categorias">
+        <span class="num">7</span> Categorías
+      </a>
+      <a class="sidebar-link" href="#proveedores" data-section="proveedores">
+        <span class="num">8</span> Proveedores
+      </a>
+      <a class="sidebar-link" href="#clientes" data-section="clientes">
+        <span class="num">9</span> Clientes
+      </a>
+      <a class="sidebar-link" href="#ventas" data-section="ventas">
+        <span class="num">10</span> Ventas
+      </a>
+      <a class="sidebar-link" href="#compras" data-section="compras">
+        <span class="num">11</span> Compras
+      </a>
+      <a class="sidebar-link" href="#reportes" data-section="reportes">
+        <span class="num">12</span> Reportes
+      </a>
+      <a class="sidebar-link" href="#usuarios" data-section="usuarios">
+        <span class="num">13</span> Usuarios
+      </a>
+      <a class="sidebar-link" href="#perfil" data-section="perfil">
+        <span class="num">14</span> Perfil
+      </a>
+      <a class="sidebar-link" href="#exportacion" data-section="exportacion">
+        <span class="num">15</span> Exportación
+      </a>
+      <a class="sidebar-link" href="#faq" data-section="faq">
+        <span class="num">16</span> FAQ
+      </a>
+      <a class="sidebar-link" href="#soporte" data-section="soporte">
+        <span class="num">17</span> Soporte
+      </a>
+    </div>
+    <div class="sidebar-section" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--neutral-200);">
+      <div style="font-size:0.75rem;color:var(--neutral-400);padding:0 12px;">
+        © 2026 — Todos los derechos reservados
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main" id="main-content" role="main">
+
+    <!-- ============ HERO ============ -->
+    <div class="hero">
+      <h1>Manual de Usuario</h1>
+      <p class="hero-subtitle">Sistema de Gestión Comercial — Guía completa de uso y operación</p>
+      <div class="hero-meta">
+        <span>📅 Julio 2026</span>
+        <span>📄 Versión 1.0</span>
+        <span>🔒 Uso interno</span>
+      </div>
+    </div>
+
+    <!-- ============ 1. INTRODUCCIÓN ============ -->
+    <section class="section" id="introduccion">
+      <h2><span class="section-number">1</span> Introducción</h2>
+      <p>El <strong>Sistema de Gestión Comercial</strong> es una plataforma integral diseñada para administrar las operaciones diarias de negocios comerciales. Proporciona herramientas para el control de inventario, registro de ventas y compras, gestión de clientes con programa de fidelización, y generación de reportes ejecutivos.</p>
+
+      <h3>1.1 Módulos del Sistema</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Módulo</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Dashboard</strong></td><td>Panel resumen con indicadores clave de rendimiento (KPI)</td></tr>
+            <tr><td><strong>Productos</strong></td><td>Catálogo de productos con control de stock y precios</td></tr>
+            <tr><td><strong>Categorías</strong></td><td>Clasificación de productos por rubro</td></tr>
+            <tr><td><strong>Proveedores</strong></td><td>Directorio de proveedores</td></tr>
+            <tr><td><strong>Clientes</strong></td><td>Base de datos de clientes con historial y puntos de fidelidad</td></tr>
+            <tr><td><strong>Ventas</strong></td><td>Punto de venta con opciones de cobro y facturación</td></tr>
+            <tr><td><strong>Compras</strong></td><td>Registro de órdenes de compra y reposición de stock</td></tr>
+            <tr><td><strong>Reportes</strong></td><td>Análisis de datos con exportación a PDF/CSV</td></tr>
+            <tr><td><strong>Usuarios</strong></td><td>Administración de cuentas y permisos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>1.2 Roles de Usuario</h3>
+      <p>El sistema contempla dos roles con distintos niveles de acceso:</p>
+      <div class="card-grid">
+        <div class="card"><strong>Administrador</strong><span>Acceso completo a todas las funcionalidades, incluyendo gestión de usuarios</span></div>
+        <div class="card"><strong>Usuario</strong><span>Acceso a operaciones diarias (ventas, compras, productos) sin administración de cuentas</span></div>
+      </div>
+    </section>
+
+    <!-- ============ 2. REQUERIMIENTOS ============ -->
+    <section class="section" id="requerimientos">
+      <h2><span class="section-number">2</span> Requerimientos del Sistema</h2>
+
+      <h3>2.1 Requisitos de Hardware</h3>
+      <ul>
+        <li>Computadora con acceso a internet o red local</li>
+        <li>Monitor con resolución mínima de <strong>1024 × 768</strong> píxeles</li>
+        <li><strong>4 GB</strong> de RAM recomendados</li>
+      </ul>
+
+      <h3>2.2 Navegadores Soportados</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Navegador</th><th>Versión Mínima</th></tr></thead>
+          <tbody>
+            <tr><td>Google Chrome</td><td>90+</td></tr>
+            <tr><td>Mozilla Firefox</td><td>88+</td></tr>
+            <tr><td>Microsoft Edge</td><td>90+</td></tr>
+            <tr><td>Safari</td><td>14+</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-info">
+        <span class="callout-icon">💡</span>
+        <span>Se recomienda utilizar <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong> para una experiencia óptima.</span>
+      </div>
+    </section>
+
+    <!-- ============ 3. ACCESO ============ -->
+    <section class="section" id="acceso">
+      <h2><span class="section-number">3</span> Acceso al Sistema</h2>
+
+      <h3>3.1 Inicio de Sesión</h3>
+      <p>Para acceder al sistema, utilice el formulario de inicio de sesión:</p>
+      <ol class="steps">
+        <li>Ingrese su <strong>nombre de usuario</strong> en el campo correspondiente.</li>
+        <li>Ingrese su <strong>contraseña</strong> personal.</li>
+        <li>Presione el botón <strong>"Iniciar Sesión"</strong>.</li>
+      </ol>
+
+      <h3>3.2 Credenciales por Defecto</h3>
+      <p>Al realizar la instalación inicial, se crea automáticamente una cuenta de administrador:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Valor</th></tr></thead>
+          <tbody>
+            <tr><td>Usuario</td><td><code>admin</code></td></tr>
+            <tr><td>Contraseña</td><td><code>admin123</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-danger">
+        <span class="callout-icon">⚠️</span>
+        <span><strong>Importante:</strong> Cambie la contraseña por defecto inmediatamente después del primer inicio de sesión.</span>
+      </div>
+
+      <h3>3.3 Recuperación de Contraseña</h3>
+      <p>Si olvida su contraseña, contacte al administrador del sistema para restablecerla. Por razones de seguridad, no es posible recuperar contraseñas de forma automática.</p>
+    </section>
+
+    <!-- ============ 4. CONFIGURACIÓN ============ -->
+    <section class="section" id="configuracion">
+      <h2><span class="section-number">4</span> Configuración Inicial del Negocio</h2>
+      <p>Al iniciar sesión por primera vez, el sistema mostrará un asistente de configuración para registrar los datos del negocio.</p>
+
+      <h3>4.1 Datos del Negocio</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Descripción</th><th>Obligatorio</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Nombre del Negocio</strong></td><td>Razón social o nombre comercial</td><td><span class="tag tag-danger">Sí</span></td></tr>
+            <tr><td><strong>Tipo de Negocio</strong></td><td>Seleccione el rubro de su negocio</td><td><span class="tag tag-danger">Sí</span></td></tr>
+            <tr><td><strong>Dirección</strong></td><td>Ubicación física del establecimiento</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Teléfono</strong></td><td>Número de contacto principal</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Email</strong></td><td>Correo electrónico corporativo</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Moneda</strong></td><td>Tipo de moneda para operaciones (PEN, USD, etc.)</td><td><span class="tag tag-danger">Sí</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4.2 Tipos de Negocio</h3>
+      <p>El sistema se adapta a distintos rubros comerciales. Seleccione el que mejor describa su operación:</p>
+      <div class="card-grid">
+        <div class="card"><span>👕 Tienda de Ropa</span></div>
+        <div class="card"><span>💻 Electrónica</span></div>
+        <div class="card"><span>💊 Farmacia</span></div>
+        <div class="card"><span>📝 Papelería</span></div>
+        <div class="card"><span>🔧 Ferretería</span></div>
+        <div class="card"><span>🛒 Abarrotes</span></div>
+        <div class="card"><span>🍽️ Restaurante</span></div>
+        <div class="card"><span>🔩 Taller Mecánico</span></div>
+        <div class="card"><span>📦 Otros</span></div>
+      </div>
+
+      <h3>4.3 Campos Personalizados</h3>
+      <p>El sistema permite agregar campos adicionales según el tipo de negocio y las necesidades específicas de su operación. Estos campos pueden aplicarse a <strong>productos</strong>, <strong>clientes</strong> y <strong>ventas</strong>.</p>
+    </section>
+
+    <!-- ============ 5. DASHBOARD ============ -->
+    <section class="section" id="dashboard">
+      <h2><span class="section-number">5</span> Panel Principal (Dashboard)</h2>
+      <p>Una vez iniciada la sesión, el <strong>Dashboard</strong> se muestra como pantalla principal.</p>
+
+      <h3>5.1 Indicadores Clave (KPI)</h3>
+      <p>El panel superior muestra tarjetas con indicadores en tiempo real:</p>
+      <div class="card-grid">
+        <div class="card"><strong>📦 Productos</strong><span>Total de productos activos en el catálogo</span></div>
+        <div class="card"><strong>👥 Clientes</strong><span>Número total de clientes registrados</span></div>
+        <div class="card"><strong>🧾 Ventas Hoy</strong><span>Total de ventas realizadas en el día actual</span></div>
+        <div class="card"><strong>💰 Ingresos Hoy</strong><span>Suma total de ingresos generados en el día</span></div>
+      </div>
+      <div class="callout callout-info">
+        <span class="callout-icon">💡</span>
+        <span>Cada tarjeta es un <strong>enlace directo</strong> a la sección correspondiente. Al hacer clic en "Productos", el sistema lo redirige al módulo de productos.</span>
+      </div>
+
+      <h3>5.2 Secciones del Dashboard</h3>
+      <ul>
+        <li><strong>Ventas Recientes:</strong> Lista las últimas transacciones realizadas con información de cliente, productos, total, método de pago y fecha.</li>
+        <li><strong>Productos con Stock Bajo:</strong> Alerta visual de productos cuyo inventario está por debajo del límite mínimo. Incluye acceso directo para realizar una orden de compra.</li>
+        <li><strong>Productos Más Vendidos:</strong> Ranking de productos con mayor volumen de ventas en el período reciente.</li>
+      </ul>
+
+      <h3>5.3 Barra de Navegación Lateral</h3>
+      <p>El menú lateral izquierdo proporciona acceso a todos los módulos del sistema:</p>
+      <ul>
+        <li><strong>🏠 Inicio</strong> → Dashboard</li>
+        <li><strong>📦 Productos</strong> → Gestión de catálogo</li>
+        <li><strong>📂 Categorías</strong> → Clasificación de productos</li>
+        <li><strong>🚚 Proveedores</strong> → Directorio de proveedores</li>
+        <li><strong>👥 Clientes</strong> → Base de datos de clientes</li>
+        <li><strong>🧾 Nueva Venta / Ventas</strong> → Módulo de ventas</li>
+        <li><strong>📥 Compras</strong> → Registro de compras</li>
+        <li><strong>📊 Reportes</strong> → Análisis y estadísticas</li>
+        <li><strong>🔐 Usuarios</strong> → Administración (solo administradores)</li>
+        <li><strong>👤 Perfil</strong> → Configuración personal</li>
+      </ul>
+      <p>En la parte inferior del menú se encuentra el botón <strong>"Cerrar Sesión"</strong>.</p>
+    </section>
+
+    <!-- ============ 6. PRODUCTOS ============ -->
+    <section class="section" id="productos">
+      <h2><span class="section-number">6</span> Gestión de Productos</h2>
+
+      <h3>6.1 Catálogo de Productos</h3>
+      <p>El módulo de productos permite administrar el inventario completo del negocio. Al ingresar, se muestra una tabla con todos los productos registrados.</p>
+
+      <h3>6.2 Registrar un Nuevo Producto</h3>
+      <ol class="steps">
+        <li>Haga clic en el botón <strong>"Nuevo Producto"</strong> en la parte superior derecha.</li>
+        <li>Complete el formulario con los datos requeridos.</li>
+        <li>Presione <strong>"Guardar"</strong> para registrar el producto.</li>
+      </ol>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Campo</th><th>Descripción</th><th>Obligatorio</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Nombre</strong></td><td>Nombre del producto</td><td><span class="tag tag-danger">Sí</span></td></tr>
+            <tr><td><strong>Descripción</strong></td><td>Detalles adicionales del producto</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Precio de Venta</strong></td><td>Precio unitario al público</td><td><span class="tag tag-danger">Sí</span></td></tr>
+            <tr><td><strong>Precio de Compra</strong></td><td>Costo unitario de adquisición</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Stock</strong></td><td>Cantidad actual en inventario</td><td><span class="tag tag-danger">Sí</span></td></tr>
+            <tr><td><strong>Stock Mínimo</strong></td><td>Límite para alerta de reabastecimiento</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Categoría</strong></td><td>Clasificación del producto</td><td><span class="tag tag-primary">No</span></td></tr>
+            <tr><td><strong>Proveedor</strong></td><td>Proveedor habitual</td><td><span class="tag tag-primary">No</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>6.3 Editar un Producto</h3>
+      <p>Ubique el producto en la tabla, haga clic en el ícono de <strong>lápiz (editar)</strong>, modifique los campos necesarios y presione <strong>"Guardar Cambios"</strong>.</p>
+
+      <h3>6.4 Eliminar un Producto</h3>
+      <p>Haga clic en el ícono de <strong>papelera (eliminar)</strong> y confirme en el cuadro de diálogo.</p>
+      <div class="callout callout-warning">
+        <span class="callout-icon">⚠️</span>
+        <span>Eliminar un producto es una acción irreversible. Considere desactivarlo en lugar de eliminarlo si existe historial de ventas asociado.</span>
+      </div>
+
+      <h3>6.5 Búsqueda de Productos</h3>
+      <p>Utilice el campo de búsqueda en la parte superior de la tabla para filtrar productos por <strong>nombre</strong>. La búsqueda se realiza en tiempo real mientras escribe.</p>
+
+      <h3>6.6 Alerta de Stock Bajo</h3>
+      <p>El sistema muestra una indicación visual (<span class="tag tag-danger">color rojo</span>) en los productos cuyo stock actual sea menor o igual al stock mínimo configurado.</p>
+    </section>
+
+    <!-- ============ 7. CATEGORÍAS ============ -->
+    <section class="section" id="categorias">
+      <h2><span class="section-number">7</span> Gestión de Categorías</h2>
+
+      <h3>7.1 Clasificación de Productos</h3>
+      <p>Las categorías permiten organizar los productos por rubro o tipo, facilitando su localización y generación de reportes.</p>
+
+      <h3>7.2 Operaciones Disponibles</h3>
+      <ul>
+        <li><strong>Crear:</strong> Haga clic en <strong>"Nueva Categoría"</strong>, ingrese el nombre y presione <strong>"Guardar"</strong>.</li>
+        <li><strong>Editar:</strong> Haga clic en el ícono de editar, modifique el nombre y presione <strong>"Guardar Cambios"</strong>.</li>
+        <li><strong>Eliminar:</strong> Haga clic en el ícono de eliminar y confirme la acción.</li>
+      </ul>
+      <div class="callout callout-info">
+        <span class="callout-icon">📌</span>
+        <span>Al eliminar una categoría, los productos asignados a ella quedarán sin categoría, pero no se eliminarán.</span>
+      </div>
+    </section>
+
+    <!-- ============ 8. PROVEEDORES ============ -->
+    <section class="section" id="proveedores">
+      <h2><span class="section-number">8</span> Gestión de Proveedores</h2>
+
+      <h3>8.1 Directorio de Proveedores</h3>
+      <p>Módulo destinado a registrar y administrar los proveedores del negocio.</p>
+
+      <h3>8.2 Registrar un Proveedor</h3>
+      <ol class="steps">
+        <li>Haga clic en <strong>"Nuevo Proveedor"</strong>.</li>
+        <li>Complete los campos: <strong>Nombre</strong> (obligatorio), Contacto, Teléfono, Email y Dirección.</li>
+        <li>Presione <strong>"Guardar"</strong>.</li>
+      </ol>
+
+      <h3>8.3 Editar y Eliminar Proveedores</h3>
+      <p>Utilice los íconos de acción en la tabla para editar o eliminar proveedores, siguiendo el mismo procedimiento que con productos y categorías.</p>
+    </section>
+
+    <!-- ============ 9. CLIENTES ============ -->
+    <section class="section" id="clientes">
+      <h2><span class="section-number">9</span> Gestión de Clientes</h2>
+
+      <h3>9.1 Base de Datos de Clientes</h3>
+      <p>El sistema cuenta con un módulo completo para la administración de clientes, incluyendo historial de compras y un <strong>sistema de fidelización basado en puntos</strong>.</p>
+
+      <h3>9.2 Registrar un Cliente</h3>
+      <h4>Registro Completo</h4>
+      <ol class="steps">
+        <li>Acceda al módulo <strong>Clientes</strong> desde el menú lateral.</li>
+        <li>Haga clic en <strong>"Nuevo Cliente"</strong>.</li>
+        <li>Complete los datos: <strong>Nombre</strong> (obligatorio), Email, Teléfono, Dirección, Tipo de Documento y Número de Documento.</li>
+        <li>Presione <strong>"Guardar"</strong>.</li>
+      </ol>
+
+      <h4>Registro Rápido desde Ventas</h4>
+      <p>Durante el proceso de venta, es posible registrar un cliente de forma expresa:</p>
+      <ol class="steps">
+        <li>Active la opción <strong>"Buscar Cliente"</strong> en la pantalla de venta.</li>
+        <li>Si el cliente no está registrado, haga clic en <strong>"Registrar Cliente"</strong>.</li>
+        <li>Ingrese únicamente el <strong>nombre</strong> (obligatorio) y <strong>teléfono</strong> (opcional).</li>
+        <li>El cliente se registra y selecciona automáticamente en la venta actual.</li>
+      </ol>
+
+      <h3>9.3 Sistema de Puntos de Fidelidad</h3>
+
+      <h4>Concepto</h4>
+      <p>El sistema de puntos premia la lealtad de los clientes frecuentes. Por cada compra realizada, el cliente acumula puntos que pueden ser canjeados por descuentos en compras futuras.</p>
+
+      <div class="card-grid">
+        <div class="card"><strong>Acumulación</strong><span>1 punto por cada S/ 100.00 de compra</span></div>
+        <div class="card"><strong>Valor del Punto</strong><span>1 punto = S/ 1.00 de descuento</span></div>
+        <div class="card"><strong>Uso Máximo</strong><span>Hasta el 100% de los puntos disponibles</span></div>
+      </div>
+
+      <div class="callout callout-success">
+        <span class="callout-icon">⭐</span>
+        <span><strong>Consejo:</strong> En el módulo de Clientes, cada tarjeta muestra los puntos acumulados. Durante una venta, al seleccionar un cliente, el panel muestra sus puntos disponibles y permite canjearlos con un control deslizante.</span>
+      </div>
+    </section>
+
+    <!-- ============ 10. VENTAS ============ -->
+    <section class="section" id="ventas">
+      <h2><span class="section-number">10</span> Módulo de Ventas</h2>
+
+      <h3>10.1 Descripción General</h3>
+      <p>El módulo de ventas es el corazón del sistema. Permite registrar transacciones comerciales de forma rápida y eficiente, con soporte para múltiples formas de pago y gestión de clientes.</p>
+
+      <h3>10.2 Flujo de Venta</h3>
+
+      <h4>Paso 1: Configuración del Cliente</h4>
+      <p>Al hacer clic en <strong>"Nueva Venta"</strong>, se presentan dos opciones:</p>
+      <div class="card-grid">
+        <div class="card"><strong>Venta Directa</strong><span>No requiere registrar un cliente. Ideal para transacciones rápidas.</span></div>
+        <div class="card"><strong>Venta con Cliente</strong><span>Busque un cliente registrado o regístrelo rápidamente desde la venta.</span></div>
+      </div>
+
+      <h4>Paso 2: Agregar Productos</h4>
+      <ol class="steps">
+        <li>En el campo de <strong>búsqueda de productos</strong>, escriba el nombre del producto.</li>
+        <li>Seleccione el producto de la lista desplegable.</li>
+        <li>Configure la <strong>cantidad</strong> a vender.</li>
+        <li>Haga clic en <strong>"Agregar"</strong> o presione <kbd>Enter</kbd>.</li>
+      </ol>
+
+      <h4>Paso 3: Revisar el Carrito</h4>
+      <p>El carrito de compras muestra el nombre del producto, precio unitario, cantidad, subtotal y un botón para eliminar productos. Use los botones <strong>+</strong> y <strong>−</strong> para ajustar cantidades directamente desde el carrito.</p>
+
+      <h4>Paso 4: Aplicar Puntos de Fidelidad</h4>
+      <p>Si la venta está asociada a un cliente con puntos acumulados:</p>
+      <ul>
+        <li>Se mostrará un <strong>control deslizante</strong> en el panel de cliente.</li>
+        <li>Arrastre el deslizador o ingrese manualmente la cantidad de puntos a canjear.</li>
+        <li>El descuento se reflejará automáticamente en el total.</li>
+      </ul>
+
+      <h4>Paso 5: Seleccionar Tipo de Pago</h4>
+      <p>Seleccione el método de pago: <span class="tag tag-primary">Efectivo</span> <span class="tag tag-primary">Tarjeta</span> <span class="tag tag-primary">Transferencia</span> <span class="tag tag-primary">Crédito</span></p>
+
+      <h4>Paso 6: Completar la Venta</h4>
+      <p>Presione <strong>"Cobrar"</strong> y el sistema registrará automáticamente:</p>
+      <ul>
+        <li>Descuento del stock de productos vendidos.</li>
+        <li>Acumulación de puntos de fidelidad (si aplica).</li>
+        <li>Registro en el historial de ventas.</li>
+      </ul>
+
+      <h3>10.3 Historial de Ventas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Columna</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Folio</strong></td><td>Número único de transacción</td></tr>
+            <tr><td><strong>Cliente</strong></td><td>Nombre del cliente o "Sin cliente"</td></tr>
+            <tr><td><strong>Productos</strong></td><td>Cantidad de artículos vendidos</td></tr>
+            <tr><td><strong>Total</strong></td><td>Monto total de la venta</td></tr>
+            <tr><td><strong>Tipo de Pago</strong></td><td>Método de pago utilizado</td></tr>
+            <tr><td><strong>Fecha</strong></td><td>Fecha y hora del registro</td></tr>
+            <tr><td><strong>Acciones</strong></td><td>Ver detalle y anular venta</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>10.4 Detalle de Venta</h3>
+      <p>Al hacer clic en <strong>"Ver Detalle"</strong> se muestra: información del cliente, productos vendidos, puntos ganados y utilizados, método de pago, fecha y hora.</p>
+
+      <h3>10.5 Anulación de Ventas</h3>
+      <ol class="steps">
+        <li>Localice la venta en el historial.</li>
+        <li>Haga clic en el ícono de <strong>anular</strong> (✕).</li>
+        <li>Confirme la anulación.</li>
+        <li>El sistema revertirá automáticamente el stock de los productos.</li>
+      </ol>
+      <div class="callout callout-danger">
+        <span class="callout-icon">⚠️</span>
+        <span>La anulación de ventas es <strong>irreversible</strong>. Solo los administradores pueden anular transacciones.</span>
+      </div>
+    </section>
+
+    <!-- ============ 11. COMPRAS ============ -->
+    <section class="section" id="compras">
+      <h2><span class="section-number">11</span> Módulo de Compras</h2>
+
+      <h3>11.1 Propósito</h3>
+      <p>El módulo de compras permite registrar las órdenes de reposición de inventario, actualizando automáticamente el stock de los productos.</p>
+
+      <h3>11.2 Registrar una Compra</h3>
+      <ol class="steps">
+        <li>Haga clic en <strong>"Nueva Compra"</strong>.</li>
+        <li>Seleccione el <strong>proveedor</strong> de la lista desplegable.</li>
+        <li>Agregue productos al listado de compra: seleccione el producto, ingrese la cantidad y verifique el precio.</li>
+        <li>Confirme la compra presionando <strong>"Guardar"</strong>.</li>
+      </ol>
+
+      <h3>11.3 Efectos de una Compra</h3>
+      <ul>
+        <li>El stock de los productos seleccionados se <strong>incrementa</strong> automáticamente.</li>
+        <li>Se registra un movimiento en el historial de compras.</li>
+        <li>Se actualiza el precio de compra si se modificó durante el registro.</li>
+      </ul>
+    </section>
+
+    <!-- ============ 12. REPORTES ============ -->
+    <section class="section" id="reportes">
+      <h2><span class="section-number">12</span> Reportes y Estadísticas</h2>
+
+      <h3>12.1 Panel de Reportes</h3>
+      <p>El módulo de reportes proporciona herramientas de análisis para la toma de decisiones gerenciales.</p>
+
+      <h3>12.2 Tipos de Reportes</h3>
+      <div class="card-grid">
+        <div class="card"><strong>📈 Reporte de Ventas</strong><span>Ingresos por período, ventas por día/semana/mes, comparativas, ventas por tipo de pago, descuentos por puntos</span></div>
+        <div class="card"><strong>📦 Reporte de Productos</strong><span>Productos más vendidos, menor rotación, valor del inventario, margen de ganancia</span></div>
+        <div class="card"><strong>👥 Reporte de Clientes</strong><span>Clientes con más compras, más puntos acumulados, historial por cliente</span></div>
+      </div>
+
+      <h3>12.3 Uso del Filtro de Fechas</h3>
+      <p>Para todos los reportes, puede definir un período específico:</p>
+      <ol class="steps">
+        <li>Utilice el <strong>selector de fechas</strong> en la parte superior del panel.</li>
+        <li>Seleccione la <strong>fecha de inicio</strong> y <strong>fecha de fin</strong>.</li>
+        <li>Presione <strong>"Filtrar"</strong> para actualizar los datos.</li>
+        <li>O use los botones de acceso rápido: <span class="tag tag-primary">Hoy</span> <span class="tag tag-primary">Esta Semana</span> <span class="tag tag-primary">Este Mes</span> <span class="tag tag-primary">Este Año</span></li>
+      </ol>
+    </section>
+
+    <!-- ============ 13. USUARIOS ============ -->
+    <section class="section" id="usuarios">
+      <h2><span class="section-number">13</span> Gestión de Usuarios</h2>
+
+      <div class="callout callout-warning">
+        <span class="callout-icon">🔐</span>
+        <span>Este módulo está disponible <strong>exclusivamente para usuarios con rol de Administrador</strong>.</span>
+      </div>
+
+      <h3>13.1 Crear un Usuario</h3>
+      <ol class="steps">
+        <li>Acceda a <strong>Usuarios</strong> desde el menú lateral.</li>
+        <li>Haga clic en <strong>"Nuevo Usuario"</strong>.</li>
+        <li>Complete los campos: <strong>Usuario</strong>, <strong>Nombre</strong>, Email, <strong>Contraseña</strong> y <strong>Rol</strong> (Administrador o Usuario).</li>
+        <li>Presione <strong>"Guardar"</strong>.</li>
+      </ol>
+
+      <h3>13.2 Editar y Eliminar Usuarios</h3>
+      <p>Se pueden modificar todos los campos excepto el nombre de usuario. No es posible eliminar el propio usuario con el que se ha iniciado sesión.</p>
+    </section>
+
+    <!-- ============ 14. PERFIL ============ -->
+    <section class="section" id="perfil">
+      <h2><span class="section-number">14</span> Perfil de Usuario</h2>
+
+      <h3>14.1 Datos Personales</h3>
+      <p>Cada usuario puede modificar sus propios datos: <strong>Nombre</strong> y <strong>Email</strong>.</p>
+
+      <h3>14.2 Cambio de Contraseña</h3>
+      <ol class="steps">
+        <li>Acceda a <strong>Perfil</strong> desde el menú lateral.</li>
+        <li>Ingrese la <strong>contraseña actual</strong>, <strong>nueva contraseña</strong> y <strong>confirmación</strong>.</li>
+        <li>Presione <strong>"Actualizar Contraseña"</strong>.</li>
+      </ol>
+      <div class="callout callout-info">
+        <span class="callout-icon">🔒</span>
+        <span>La contraseña debe tener al menos <strong>6 caracteres</strong>.</span>
+      </div>
+    </section>
+
+    <!-- ============ 15. EXPORTACIÓN ============ -->
+    <section class="section" id="exportacion">
+      <h2><span class="section-number">15</span> Exportación de Datos</h2>
+
+      <h3>15.1 Formatos Soportados</h3>
+      <div class="card-grid">
+        <div class="card"><strong>📄 CSV</strong><span>Procesamiento en hojas de cálculo (Excel, Google Sheets)</span></div>
+        <div class="card"><strong>📑 PDF</strong><span>Presentaciones, informes y archivo documental</span></div>
+      </div>
+
+      <h3>15.2 Exportar Ventas</h3>
+      <ol class="steps">
+        <li>En el módulo de <strong>Ventas</strong>, aplique los filtros deseados.</li>
+        <li>Haga clic en el botón de <strong>exportar</strong> (ícono de descarga).</li>
+        <li>Seleccione el formato: <strong>CSV</strong> o <strong>PDF</strong>.</li>
+        <li>El archivo se descargará automáticamente.</li>
+      </ol>
+
+      <h3>15.3 Exportar Reportes</h3>
+      <p>En el módulo de <strong>Reportes</strong>, seleccione el tipo de reporte y período, luego haga clic en <strong>"Exportar"</strong>.</p>
+
+      <div class="callout callout-info">
+        <span class="callout-icon">📌</span>
+        <span>La exportación incluye: folio, cliente, productos, total, tipo de pago, fecha y puntos.</span>
+      </div>
+    </section>
+
+    <!-- ============ 16. FAQ ============ -->
+    <section class="section" id="faq">
+      <h2><span class="section-number">16</span> Solución de Problemas Frecuentes</h2>
+
+      <h3>16.1 No puedo iniciar sesión</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Problema</th><th>Solución</th></tr></thead>
+          <tbody>
+            <tr><td>Usuario o contraseña incorrectos</td><td>Verifique que ambos campos estén escritos correctamente (distingue mayúsculas/minúsculas)</td></tr>
+            <tr><td>Cuenta bloqueada</td><td>Contacte al administrador del sistema</td></tr>
+            <tr><td>Sesión expirada</td><td>Cierre el navegador y vuelva a iniciar sesión</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>16.2 No aparecen productos al vender</h3>
+      <ul>
+        <li>Aún no se han registrado productos en el catálogo.</li>
+        <li>Los productos tienen stock en cero (configure stock mínimo para recibir alertas).</li>
+        <li>El filtro de búsqueda está activo (limpie el campo de búsqueda).</li>
+      </ul>
+
+      <h3>16.3 El stock no se actualiza</h3>
+      <p>Verifique que la venta o compra se haya guardado correctamente. Si una venta fue anulada, el stock se restablece automáticamente. Si el problema persiste, contacte al administrador.</p>
+
+      <h3>16.4 No puedo eliminar un usuario</h3>
+      <p>Verifique que no está intentando eliminar su propio usuario y confirme que tiene rol de <strong>Administrador</strong>.</p>
+
+      <h3>16.5 Los puntos de fidelidad no se aplican</h3>
+      <ol>
+        <li>La venta debe estar asociada a un <strong>cliente registrado</strong>.</li>
+        <li>El cliente debe tener <strong>puntos disponibles</strong>.</li>
+        <li>El control deslizante debe estar activado durante la venta.</li>
+        <li>Los puntos aplicados no pueden exceder el total de la venta.</li>
+      </ol>
+
+      <h3>16.6 Error al exportar a PDF</h3>
+      <p>Asegúrese de que su navegador permita descargas emergentes (pop-ups). Intente con otro navegador. Si el archivo se descarga pero no se abre, instale un lector de PDF.</p>
+    </section>
+
+    <!-- ============ 17. SOPORTE ============ -->
+    <section class="section" id="soporte">
+      <h2><span class="section-number">17</span> Soporte Técnico</h2>
+
+      <h3>17.1 Contacto</h3>
+      <div class="card-grid">
+        <div class="card"><strong>📧 Email</strong><span>soporte@sistemacomercial.com</span></div>
+        <div class="card"><strong>📞 Teléfono</strong><span>(555) 1234-5678</span></div>
+        <div class="card"><strong>🕐 Horario</strong><span>Lun – Vie, 9:00 a 18:00 hrs</span></div>
+      </div>
+
+      <h3>17.2 Reporte de Incidencias</h3>
+      <p>Al reportar un problema, proporcione:</p>
+      <ol>
+        <li><strong>Descripción</strong> del problema (¿qué ocurrió? ¿qué esperaba?).</li>
+        <li><strong>Pasos</strong> para reproducirlo (¿qué acciones realizó antes del error?).</li>
+        <li><strong>Captura de pantalla</strong> del error (si aplica).</li>
+        <li><strong>Navegador y versión</strong> utilizados.</li>
+      </ol>
+
+      <div class="callout callout-success">
+        <span class="callout-icon">💬</span>
+        <span>Agradecemos sus comentarios para mejorar el sistema. Envíe sus sugerencias a nuestro equipo de desarrollo a través del correo de soporte.</span>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p><strong>Sistema de Gestión Comercial v1.0</strong> — Documentación generada en Julio 2026</p>
+      <p>© 2026 Todos los derechos reservados</p>
+    </footer>
+
+  </main>
+
+  <!-- BACK TO TOP -->
+  <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Volver al inicio">⬆</button>
+
+  <script>
+    // ============================================
+    // SIDEBAR: ACTIVE SECTION ON SCROLL
+    // ============================================
+    const sections = document.querySelectorAll('.section');
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+    function updateActiveSection() {
+      const scrollPos = window.scrollY + 120;
+      let currentSection = 'introduccion';
+
+      sections.forEach(section => {
+        const top = section.offsetTop;
+        const height = section.offsetHeight;
+        if (scrollPos >= top && scrollPos < top + height) {
+          currentSection = section.id;
+        }
+      });
+
+      sidebarLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.section === currentSection) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', updateActiveSection);
+    updateActiveSection();
+
+    // ============================================
+    // READING PROGRESS BAR
+    // ============================================
+    const progressBar = document.getElementById('progress-bar');
+    window.addEventListener('scroll', () => {
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (window.scrollY / docHeight) * 100;
+      progressBar.style.width = scrollPercent + '%';
+    });
+
+    // ============================================
+    // BACK TO TOP BUTTON
+    // ============================================
+    const backToTop = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 400) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+
+    // ============================================
+    // SEARCH FUNCTIONALITY
+    // ============================================
+    const searchInput = document.getElementById('search-input');
+    const mainContent = document.getElementById('main-content');
+
+    function removeHighlights() {
+      document.querySelectorAll('.search-highlight').forEach(el => {
+        const parent = el.parentNode;
+        parent.replaceChild(document.createTextNode(el.textContent), el);
+        parent.normalize();
+      });
+    }
+
+    function highlightSearch(term) {
+      removeHighlights();
+      if (!term || term.length < 2) return;
+
+      const walker = document.createTreeWalker(
+        mainContent,
+        NodeFilter.SHOW_TEXT,
+        { acceptNode: node => node.parentElement.closest('.callout') || node.parentElement.closest('.table-wrap') || NodeFilter.FILTER_ACCEPT }
+      );
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker);
+
+      const regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      nodes.forEach(node => {
+        if (node.textContent.toLowerCase().includes(term.toLowerCase())) {
+          const span = document.createElement('span');
+          span.innerHTML = node.textContent.replace(regex, '<mark class="search-highlight">$1</mark>');
+          node.parentNode.replaceChild(span, node);
+        }
+      });
+    }
+
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        highlightSearch(searchInput.value.trim());
+      }, 300);
+    });
+
+    // ============================================
+    // MOBILE SIDEBAR TOGGLE
+    // ============================================
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    }
+
+    // Close sidebar when clicking a link (mobile)
+    sidebarLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 1024) {
+          toggleSidebar();
+        }
+      });
+    });
+
+    // ============================================
+    // SMOOTH SCROLL FOR ANCHOR LINKS
+    // ============================================
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(anchor.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUT: Ctrl+K / Cmd+K for search
+    // ============================================
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+    console.log('📘 Manual de Usuario — Sistema de Gestión Comercial v1.0');
+  </script>
+
+</body>
+</html>

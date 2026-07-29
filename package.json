@@ -1,0 +1,27 @@
+{
+  "name": "crm-inventario",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CRM Sistema de Inventario — Full-stack con Vercel + Neon PostgreSQL",
+  "scripts": {
+    "dev:backend": "node --watch api/index.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "cd frontend && npm install && npm run build",
+    "start": "node api/index.js",
+    "migrate": "node -e \"require('./backend/src/database').initSchema().then(() => { console.log('✓ Schema initialized'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
+    "seed": "node backend/src/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
