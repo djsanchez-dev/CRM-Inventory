@@ -1197,16 +1197,17 @@ code {
   align-items: center;
   justify-content: center;
   padding: 40px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   gap: 8px;
 }
 
 .empty-state h3 {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   margin-top: 8px;
 }
 
 .empty-state p {
+  color: var(--text-muted);
   margin-bottom: 8px;
 }
 
@@ -1266,7 +1267,7 @@ code {
 
 .stat-label {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -1377,6 +1378,7 @@ code {
 
 .chart-body {
   padding: 16px;
+  color: var(--text-secondary);
 }
 
 .bottom-grid {
@@ -1402,6 +1404,7 @@ code {
 .table-card-header h3 {
   font-size: 0.95rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .table-card-body {
@@ -1525,8 +1528,8 @@ code {
   padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg-secondary);
-  color: var(--text);
+  background: var(--bg-white);
+  color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -1534,7 +1537,7 @@ code {
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: var(--hover);
+  background: var(--bg-primary);
   border-color: var(--primary);
   color: var(--primary);
 }
