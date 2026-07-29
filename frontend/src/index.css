@@ -130,7 +130,7 @@ button, input, select, textarea {
 
 
 /* ===========================
-   Login Page
+   Login Page — Light Theme
    =========================== */
 .login-page {
   min-height: 100vh;
@@ -139,7 +139,7 @@ button, input, select, textarea {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 50%, #eef2ff 100%);
 }
 
 .login-background {
@@ -151,8 +151,8 @@ button, input, select, textarea {
 .bg-shape {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
+  filter: blur(100px);
+  opacity: 0.25;
 }
 
 .bg-shape-1 {
@@ -191,14 +191,13 @@ button, input, select, textarea {
 .login-container {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-xl);
   padding: 48px 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.12);
 }
 
 .login-header {
@@ -216,18 +215,18 @@ button, input, select, textarea {
   justify-content: center;
   color: white;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
 }
 
 .login-header h1 {
-  color: white;
+  color: var(--text-primary);
   font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .login-header p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -238,9 +237,9 @@ button, input, select, textarea {
 }
 
 .login-form .form-group label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 6px;
   display: block;
 }
@@ -248,10 +247,10 @@ button, input, select, textarea {
 .login-form .form-group input {
   width: 100%;
   padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-family: var(--font);
   transition: var(--transition);
@@ -260,12 +259,12 @@ button, input, select, textarea {
 
 .login-form .form-group input:focus {
   border-color: var(--primary-light);
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .login-form .form-group input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .password-input {
@@ -283,7 +282,7 @@ button, input, select, textarea {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   display: flex;
@@ -291,7 +290,7 @@ button, input, select, textarea {
 }
 
 .toggle-password:hover {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
 .error-message {
@@ -299,10 +298,10 @@ button, input, select, textarea {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--danger-bg);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: var(--radius-md);
-  color: #fca5a5;
+  color: var(--danger);
   font-size: 0.85rem;
 }
 
@@ -344,12 +343,13 @@ button, input, select, textarea {
 }
 
 .login-footer p {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-size: 0.8rem;
 }
 
 .login-footer strong {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .login-footer .setup-link {
@@ -361,12 +361,12 @@ button, input, select, textarea {
 }
 
 .login-footer .setup-link:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--primary-bg);
+  color: var(--primary);
 }
 
 .login-footer .setup-link:hover strong {
-  color: #fff;
+  color: var(--primary);
 }
 
 /* ===========================
@@ -1414,8 +1414,8 @@ code {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;

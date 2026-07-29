@@ -69,12 +69,47 @@ const styles = `
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s;
   font-family: inherit;
 }
 .nav-cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+}
+.nav-secondary {
+  padding: 9px 20px;
+  background: transparent;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.nav-secondary:hover {
+  background: rgba(99,102,241,0.06);
+  border-color: #6366f1;
+  color: #6366f1;
+}
+.landing-nav.scrolled .nav-secondary {
+  border-color: #e2e8f0;
+  color: #475569;
+}
+.landing-nav.scrolled .nav-secondary:hover {
+  background: rgba(99,102,241,0.06);
+  border-color: #6366f1;
+  color: #6366f1;
+}
+.landing-nav:not(.scrolled) .nav-secondary {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.8);
+}
+.landing-nav:not(.scrolled) .nav-secondary:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.4);
+  color: white;
 }
 
 /* ===== HERO ===== */
@@ -84,57 +119,62 @@ const styles = `
   align-items: center;
   justify-content: center;
   position: relative;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background: linear-gradient(160deg, #0f172a 0%, #162044 40%, #1a1a3e 70%, #0f172a 100%);
   overflow: hidden;
 }
 .hero-bg { position: absolute; inset: 0; overflow: hidden; }
 .hero-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
-  opacity: 0.12;
+  filter: blur(120px);
+  opacity: 0.10;
 }
 .hero-glow-1 {
-  width: 500px; height: 500px;
+  width: 600px; height: 600px;
   background: #6366f1;
-  top: -150px; right: -100px;
-  animation: hoverFloat 8s ease-in-out infinite;
+  top: -250px; right: -150px;
+  animation: hoverFloat 10s ease-in-out infinite;
 }
 .hero-glow-2 {
-  width: 350px; height: 350px;
+  width: 400px; height: 400px;
   background: #06b6d4;
-  bottom: -80px; left: -80px;
-  animation: hoverFloat 10s ease-in-out infinite reverse;
+  bottom: -100px; left: -100px;
+  animation: hoverFloat 12s ease-in-out infinite reverse;
 }
 @keyframes hoverFloat {
-  0%, 100% { transform: translate(0,0); }
-  50% { transform: translate(30px,-30px); }
+  0%, 100% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(20px,-20px) scale(1.05); }
+  66% { transform: translate(-15px,15px) scale(0.98); }
 }
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 800px;
+  max-width: 820px;
   text-align: center;
-  padding: 120px 24px 60px;
+  padding: 140px 24px 80px;
 }
 .hero-badge {
-  display: inline-block;
-  padding: 8px 20px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px 7px 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 50px;
-  color: rgba(255,255,255,0.8);
-  font-size: 0.85rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.82rem;
   font-weight: 500;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+  letter-spacing: 0.3px;
 }
+
 .hero-content h1 {
   color: white;
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 20px;
-  letter-spacing: -0.5px;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 24px;
+  letter-spacing: -0.8px;
 }
 .hero-highlight {
   background: linear-gradient(135deg, #a5b4fc, #818cf8);
@@ -143,20 +183,31 @@ const styles = `
   background-clip: text;
 }
 .hero-desc {
-  color: rgba(255,255,255,0.65);
-  font-size: clamp(1rem, 1.8vw, 1.15rem);
-  line-height: 1.7;
-  max-width: 600px;
-  margin: 0 auto 36px;
+  color: rgba(255,255,255,0.55);
+  font-size: clamp(1rem, 1.6vw, 1.1rem);
+  line-height: 1.75;
+  max-width: 580px;
+  margin: 0 auto 40px;
+  font-weight: 400;
 }
 .hero-cta {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   justify-content: center;
   flex-wrap: wrap;
 }
+.hero-note {
+  color: rgba(255,255,255,0.35);
+  font-size: 0.82rem;
+  margin-top: 20px;
+  font-weight: 400;
+}
+.hero-note strong {
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+}
 .btn-primary {
-  padding: 14px 32px;
+  padding: 15px 34px;
   background: linear-gradient(135deg, #6366f1, #7c3aed);
   color: white;
   border: none;
@@ -164,24 +215,28 @@ const styles = `
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.25s ease;
   font-family: inherit;
-  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+  letter-spacing: 0.2px;
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,0.45); }
+.btn-primary:active { transform: translateY(0); }
 .btn-secondary {
-  padding: 14px 32px;
-  background: rgba(255,255,255,0.08);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
+  padding: 15px 34px;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.18);
   border-radius: 12px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.25s ease;
   font-family: inherit;
+  letter-spacing: 0.2px;
 }
-.btn-secondary:hover { background: rgba(255,255,255,0.14); }
+.btn-secondary:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+.btn-secondary:active { transform: translateY(0); }
 .hero-stats {
   display: flex;
   justify-content: center;
@@ -248,71 +303,105 @@ const styles = `
 /* ===== FEATURES GRID ===== */
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 24px;
 }
 .features-grid .feature-card {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 28px 24px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 32px 28px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.features-grid .feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.features-grid .feature-card:hover::before {
+  opacity: 1;
 }
 .features-grid .feature-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  border-color: #c7d2fe;
 }
 .features-grid .feature-icon {
-  font-size: 1.8rem;
-  margin-bottom: 14px;
+  width: 48px;
+  height: 48px;
+  background: rgba(99,102,241,0.08);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  margin-bottom: 18px;
 }
 .features-grid .feature-card h3 {
   font-size: 1.05rem;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  color: #0f172a;
 }
 .features-grid .feature-card p {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: #64748b;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 /* ===== STEPS ===== */
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 40px;
   position: relative;
+}
+.steps-grid::before {
+  content: '';
+  position: absolute;
+  top: 48px;
+  left: 16.66%;
+  right: 16.66%;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, rgba(99,102,241,0.15));
 }
 .step-card {
   text-align: center;
-  padding: 32px 24px;
+  padding: 40px 28px;
   position: relative;
 }
 .step-num {
-  font-size: 3rem;
-  font-weight: 800;
-  color: rgba(99,102,241,0.15);
-  line-height: 1;
-  margin-bottom: 12px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 auto 18px;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.25);
 }
 .step-card h3 {
   font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  color: #0f172a;
 }
 .step-card p {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: #64748b;
   line-height: 1.6;
-}
-.step-arrow {
-  position: absolute;
-  right: -20px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.5rem;
-  color: #cbd5e1;
+  max-width: 260px;
+  margin: 0 auto;
 }
 
 /* ===== PRICING ===== */
@@ -324,111 +413,174 @@ const styles = `
 .pricing-card {
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 36px 28px;
+  border-radius: 20px;
+  padding: 40px 32px;
   text-align: center;
   position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 .pricing-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+  border-color: #cbd5e1;
 }
 .pricing-card.featured {
   border-color: #6366f1;
-  box-shadow: 0 8px 32px rgba(99,102,241,0.1);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.12);
+  transform: scale(1.03);
+  z-index: 1;
+}
+.pricing-card.featured:hover {
+  transform: scale(1.03) translateY(-4px);
+  box-shadow: 0 16px 48px rgba(99,102,241,0.18);
 }
 .pricing-badge {
   position: absolute;
   top: -13px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px 20px;
+  padding: 6px 22px;
   background: linear-gradient(135deg, #6366f1, #7c3aed);
   color: white;
   border-radius: 50px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 .pricing-card h3 {
   font-size: 1.2rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  color: #0f172a;
+}
+.pricing-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-bottom: 20px;
 }
 .pricing-price {
   font-size: 1.5rem;
   font-weight: 800;
   color: #6366f1;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
 }
 .pricing-card ul {
   list-style: none;
   text-align: left;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
+  flex: 1;
 }
 .pricing-card ul li {
-  padding: 8px 0 8px 24px;
+  padding: 9px 0 9px 26px;
   position: relative;
   font-size: 0.88rem;
-  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  border-bottom: 1px solid #f8fafc;
 }
 .pricing-card ul li:last-child { border-bottom: none; }
 .pricing-card ul li::before {
-  content: '✓';
+  content: '';
   position: absolute;
   left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pricing-card ul li::after {
+  content: '✓';
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #10b981;
+  font-size: 0.65rem;
   font-weight: 700;
 }
 .pricing-btn {
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   font-family: inherit;
+  color: #475569;
 }
-.pricing-btn:hover { border-color: #6366f1; color: #6366f1; }
+.pricing-btn:hover { border-color: #6366f1; color: #6366f1; background: rgba(99,102,241,0.04); }
 .pricing-btn.primary {
   background: linear-gradient(135deg, #6366f1, #7c3aed);
   color: white;
   border: none;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.3);
 }
-.pricing-btn.primary:hover { box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
+.pricing-btn.primary:hover { box-shadow: 0 6px 20px rgba(99,102,241,0.4); background: linear-gradient(135deg, #6366f1, #7c3aed); }
 
 /* ===== CTA FINAL ===== */
 .landing-cta-section {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(160deg, #0f172a 0%, #162044 50%, #0f172a 100%);
   text-align: center;
   padding: 100px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.cta-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: #6366f1;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.08;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .cta-content {
   max-width: 600px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 .cta-content h2 {
   color: white;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   font-weight: 700;
   margin-bottom: 16px;
+  letter-spacing: -0.3px;
 }
 .cta-content p {
-  color: rgba(255,255,255,0.6);
-  font-size: 1.05rem;
-  margin-bottom: 32px;
-  line-height: 1.6;
+  color: rgba(255,255,255,0.55);
+  font-size: 1rem;
+  margin-bottom: 36px;
+  line-height: 1.7;
 }
-.btn-lg { padding: 16px 40px; font-size: 1.1rem; }
+.cta-buttons {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.btn-lg { padding: 16px 40px; font-size: 1rem; }
 
 /* ===== FOOTER ===== */
 .landing-footer {
-  background: #0f172a;
-  padding: 60px 24px 24px;
-  color: rgba(255,255,255,0.6);
+  background: #0b1222;
+  padding: 64px 24px 28px;
+  color: rgba(255,255,255,0.5);
 }
 .footer-inner {
   max-width: 1100px;
@@ -438,15 +590,16 @@ const styles = `
   gap: 60px;
   margin-bottom: 40px;
 }
-.footer-brand .logo-text {
-  font-size: 1.1rem;
+.footer-brand .footer-logo {
+  font-size: 1.05rem;
   font-weight: 700;
   color: white;
+  margin-bottom: 10px;
 }
 .footer-brand p {
-  font-size: 0.85rem;
-  margin-top: 8px;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  max-width: 280px;
 }
 .footer-links {
   display: grid;
@@ -455,16 +608,18 @@ const styles = `
 }
 .footer-col h4 {
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 .footer-col a {
   display: block;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.45);
   text-decoration: none;
   font-size: 0.85rem;
-  padding: 4px 0;
+  padding: 5px 0;
   transition: color 0.2s;
   cursor: pointer;
 }
@@ -473,8 +628,8 @@ const styles = `
   max-width: 1100px;
   margin: 0 auto;
   padding-top: 24px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.82rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.8rem;
   text-align: center;
 }
 
@@ -591,7 +746,7 @@ const styles = `
   .mobile-overlay { display: block; }
   .mobile-menu { display: flex; flex-direction: column; }
   .steps-grid { grid-template-columns: 1fr; }
-  .step-arrow { display: none; }
+  .steps-grid::before { display: none; }
   .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
   .hero-stats { gap: 24px; }
   .footer-inner { grid-template-columns: 1fr; gap: 32px; }
@@ -686,8 +841,12 @@ export default function Landing() {
           <a onClick={() => scrollTo('pricing')}>Precios</a>
           <hr />
           <button className="mobile-cta" onClick={() => { setMenuOpen(false); navigate('/login'); }}>
-            🚀 Ingresar al Sistema
+            Ingresar al Sistema
           </button>
+          <hr />
+          <a className="mobile-nav-link" onClick={() => { setMenuOpen(false); navigate('/setup'); }}>
+            Crear cuenta gratuita
+          </a>
         </nav>
       </aside>
 
@@ -702,6 +861,9 @@ export default function Landing() {
             <a href="#features">Funcionalidades</a>
             <a href="#how">Cómo funciona</a>
             <a href="#pricing">Precios</a>
+            <button className="nav-secondary" onClick={() => navigate('/setup')}>
+              Crear cuenta
+            </button>
             <button className="nav-cta" onClick={() => navigate('/login')}>
               Ingresar
             </button>
@@ -731,12 +893,13 @@ export default function Landing() {
           </p>
           <div className="hero-cta">
             <button className="btn-primary" onClick={() => navigate('/login')}>
-              🚀 Acceder al Sistema
+              Ingresar al Sistema
             </button>
-            <button className="btn-secondary" onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>
-              Ver funcionalidades
+            <button className="btn-secondary" onClick={() => navigate('/setup')}>
+              Crear cuenta gratuita
             </button>
           </div>
+          <p className="hero-note">¿Primera vez? Crea tu cuenta en <strong>menos de 2 minutos</strong>. Sin compromisos.</p>
           <div className="hero-stats">
             <div className="hero-stat">
               <span className="hero-stat-num">9</span>
@@ -783,10 +946,9 @@ export default function Landing() {
         <div className="steps-grid">
           {steps.map((s, i) => (
             <div className="step-card" key={i}>
-              <div className="step-num">{s.num}</div>
-              <h3>{s.title}</h3>
-              <p>{s.desc}</p>
-              {i < steps.length - 1 && <div className="step-arrow">→</div>}
+          <div className="step-num">{s.num}</div>
+          <h3>{s.title}</h3>
+          <p>{s.desc}</p>
             </div>
           ))}
         </div>
@@ -802,6 +964,7 @@ export default function Landing() {
         <div className="pricing-grid">
           <div className="pricing-card">
             <h3>Básico</h3>
+            <p className="pricing-sub">Para negocios pequeños</p>
             <p className="pricing-price">Consultar</p>
             <ul>
               <li>Hasta 500 productos</li>
@@ -810,11 +973,12 @@ export default function Landing() {
               <li>Exportación a CSV</li>
               <li>1 usuario</li>
             </ul>
-            <button className="pricing-btn" onClick={() => navigate('/login')}>Comenzar</button>
+            <button className="pricing-btn" onClick={() => navigate('/setup')}>Crear cuenta</button>
           </div>
           <div className="pricing-card featured">
             <div className="pricing-badge">Recomendado</div>
             <h3>Profesional</h3>
+            <p className="pricing-sub">Para medianas empresas</p>
             <p className="pricing-price">Consultar</p>
             <ul>
               <li>Productos ilimitados</li>
@@ -824,10 +988,11 @@ export default function Landing() {
               <li>Hasta 5 usuarios</li>
               <li>Soporte prioritario</li>
             </ul>
-            <button className="pricing-btn primary" onClick={() => navigate('/login')}>Comenzar</button>
+            <button className="pricing-btn primary" onClick={() => navigate('/setup')}>Crear cuenta</button>
           </div>
           <div className="pricing-card">
             <h3>Enterprise</h3>
+            <p className="pricing-sub">Para grandes corporaciones</p>
             <p className="pricing-price">Consultar</p>
             <ul>
               <li>Todo lo del plan Profesional</li>
@@ -844,12 +1009,18 @@ export default function Landing() {
 
       {/* ========== CTA FINAL ========== */}
       <section className="landing-cta-section">
+        <div className="cta-glow"></div>
         <div className="cta-content">
-          <h2>¿Listo para transformar tu negocio?</h2>
-          <p>Únete a las empresas que ya confían en nuestro sistema. Solicita una demo gratuita.</p>
-          <button className="btn-primary btn-lg" onClick={() => navigate('/login')}>
-            🚀 Ingresar Ahora
-          </button>
+          <h2>¿Listo para optimizar tu negocio?</h2>
+          <p>Comienza hoy y descubre por qué empresas de todos los tamaños confían en nuestra plataforma.</p>
+          <div className="cta-buttons">
+            <button className="btn-primary btn-lg" onClick={() => navigate('/login')}>
+              Ingresar al Sistema
+            </button>
+            <button className="btn-secondary btn-lg" onClick={() => navigate('/setup')}>
+              Crear cuenta gratuita
+            </button>
+          </div>
         </div>
       </section>
 
@@ -857,8 +1028,8 @@ export default function Landing() {
       <footer className="landing-footer">
         <div className="footer-inner">
           <div className="footer-brand">
-            <span className="logo-text">Gestión<span className="logo-accent">Comercial</span></span>
-            <p>Sistema profesional de gestión de inventario y ventas.</p>
+            <div className="footer-logo">Gestión<span className="logo-accent">Comercial</span></div>
+            <p>Sistema profesional de gestión de inventario, ventas y clientes. Todo en la nube.</p>
           </div>
           <div className="footer-links">
             <div className="footer-col">
