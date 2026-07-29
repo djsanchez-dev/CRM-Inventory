@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import { LoadingProvider } from './components/LoadingOverlay';
 
 // Lazy-loaded pages — each is a separate chunk
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const BusinessSetup = lazy(() => import('./pages/BusinessSetup'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -49,10 +50,11 @@ function AppContent() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/setup" element={<BusinessSetup />} />
         <Route
-          path="/"
+          path="/app"
           element={
             <PrivateRoute>
               <Layout />

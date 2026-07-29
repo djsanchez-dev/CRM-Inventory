@@ -40,7 +40,7 @@ export default function Login() {
     try {
       await login(username, password);
       toast.success('Sesión iniciada correctamente');
-      navigate('/');
+      navigate('/app');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -132,7 +132,9 @@ export default function Login() {
         </form>
 
         <div className="login-footer">
-          <p>Demo: <strong>admin</strong> / <strong>admin123</strong></p>
+          <p className="setup-link" onClick={() => navigate('/setup')}>
+            🏪 ¿Primera vez? <strong>Crear nuevo negocio</strong>
+          </p>
         </div>
       </div>
     </div>

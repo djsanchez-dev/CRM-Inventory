@@ -61,7 +61,7 @@ router.get('/', async (req, res) => {
        ${whereClause}
        ORDER BY s.nombre ASC
        LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
-      [business_id, ...params, limitNum, offset]
+      [...params, limitNum, offset]
     );
 
     res.json({

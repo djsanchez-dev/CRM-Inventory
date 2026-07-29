@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
        GROUP BY c.id
        ORDER BY c.nombre ASC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [business_id, ...params, limitNum, offset]
+      [...params, limitNum, offset]
     );
 
     res.json({

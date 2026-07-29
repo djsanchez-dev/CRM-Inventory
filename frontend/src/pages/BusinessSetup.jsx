@@ -97,7 +97,7 @@ export default function BusinessSetup() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('business', JSON.stringify(data.business));
-      navigate('/');
+      navigate('/app');
     } catch (err) {
       setError(err.message);
     } finally {
