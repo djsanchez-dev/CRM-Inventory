@@ -35,10 +35,51 @@ const BUSINESS_PRESETS = {
       report_plural: 'Reportes',
       user: 'Usuario',
       user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
     },
     extraFields: {
       product: [],
       customer: [],
+      sale: [],
+    },
+  },
+
+  carwash: {
+    name: 'Car Wash / Lavadero',
+    description: 'Lavado de autos y servicios mecánicos',
+    labels: {
+      product: 'Producto',
+      product_plural: 'Productos',
+      customer: 'Cliente',
+      customer_plural: 'Clientes',
+      sale: 'Venta',
+      sale_plural: 'Ventas',
+      purchase: 'Compra',
+      purchase_plural: 'Compras',
+      category: 'Categoría',
+      category_plural: 'Categorías',
+      supplier: 'Proveedor',
+      supplier_plural: 'Proveedores',
+      stock: 'Stock',
+      stock_minimo: 'Stock Mínimo',
+      price: 'Precio',
+      price_plural: 'Precios',
+      cost: 'Costo',
+      sku: 'SKU',
+      dashboard: 'Dashboard',
+      report: 'Reporte',
+      report_plural: 'Reportes',
+      user: 'Usuario',
+      user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
+    },
+    extraFields: {
+      product: [],
+      customer: [
+        { key: 'placa', label: 'Placa', type: 'text', placeholder: 'Ej: ABC-123' },
+      ],
       sale: [],
     },
   },
@@ -70,6 +111,8 @@ const BUSINESS_PRESETS = {
       report_plural: 'Reportes',
       user: 'Usuario',
       user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
     },
     extraFields: {
       product: [
@@ -109,6 +152,8 @@ const BUSINESS_PRESETS = {
       report_plural: 'Reportes',
       user: 'Usuario',
       user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
     },
     extraFields: {
       product: [
@@ -148,6 +193,8 @@ const BUSINESS_PRESETS = {
       report_plural: 'Reportes',
       user: 'Usuario',
       user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
     },
     extraFields: {
       product: [
@@ -187,6 +234,8 @@ const BUSINESS_PRESETS = {
       report_plural: 'Reportes',
       user: 'Usuario',
       user_plural: 'Usuarios',
+      service: 'Servicio',
+      service_plural: 'Servicios',
     },
     extraFields: {
       product: [
@@ -200,9 +249,15 @@ const BUSINESS_PRESETS = {
   },
 };
 
+/** Normalize a stored type to its canonical key (legacy aliases included) */
+function normalizeType(type) {
+  if (type === 'taller') return 'carwash';
+  return BUSINESS_PRESETS[type] ? type : 'general';
+}
+
 /** Return the preset for a given type, or general if not found */
 function getPreset(type) {
-  return BUSINESS_PRESETS[type] || BUSINESS_PRESETS.general;
+  return BUSINESS_PRESETS[normalizeType(type)];
 }
 
 /** Resolve the full config by merging stored JSON config with the preset */
@@ -214,7 +269,7 @@ function resolveConfig(storedConfig, tipo_negocio) {
   const labels = { ...preset.labels, ...(storedConfig.labels || {}) };
 
   return {
-    tipo: tipo_negocio || 'general',
+    tipo: normalizeType(tipo_negocio),
     moneda: storedConfig.moneda || 'PEN',
     idioma: storedConfig.idioma || 'es',
     labels,
@@ -223,4 +278,4 @@ function resolveConfig(storedConfig, tipo_negocio) {
   };
 }
 
-module.exports = { BUSINESS_PRESETS, getPreset, resolveConfig };
+module.exports = { BUSINESS_PRESETS, getPreset, resolveConfig, normalizeType };

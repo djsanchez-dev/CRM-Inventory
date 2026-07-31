@@ -1,25 +1,26 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Edit, Trash, Shield, ShieldOff, X, User } from '../components/Icons';
+import { Plus, Edit, Trash, Shield, ShieldOff, X, User, Search } from '../components/Icons';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useBusinessConfig } from '../context/BusinessConfig';
 import { useToast } from '../components/Toast';
 import Skeleton from '../components/Skeleton';
+import UserFormModal from '../components/users/UserFormModal';
 
 export default function Users() {
   const { t } = useBusinessConfig();
   const toast = useToast();
   const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ username: '', password: '', nombre: '', rol: 'user' });
-  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const { user: currentUser } = useAuth();
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
   const loadUsers = async () => {
     try {
@@ -32,54 +33,36 @@ export default function Users() {
     }
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ username: '', password: '', nombre: '', rol: 'user' });
-    setShowModal(true);
-  };
+  const openCreate = () => { setEditing(null); setShowModal(true); };
+  const openEdit = (user) => { setEditing(user); setShowModal(true); };
 
-  const openEdit = (user) => {
-    setEditing(user);
-    setForm({
-      username: user.username,
-      password: '',
-      nombre: user.nombre,
-      rol: user.rol,
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const handleSave = async (data) => {
     try {
       if (editing) {
-        const data = { username: form.username, nombre: form.nombre, rol: form.rol };
-        if (form.password) data.password = form.password;
         await api.updateUser(editing.id, data);
         toast.success('Usuario actualizado correctamente');
       } else {
-        await api.createUser(form);
+        await api.createUser(data);
         toast.success('Usuario creado correctamente');
       }
       setShowModal(false);
       loadUsers();
     } catch (error) {
       toast.error(error.message);
-    } finally {
-      setSaving(false);
     }
   };
 
-  const handleDelete = async (targetUser) => {
-    if (targetUser.id === currentUser?.id) {
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    if (confirmDelete.id === currentUser?.id) {
       toast.warning('No puedes eliminarte a ti mismo');
+      setConfirmDelete(null);
       return;
     }
-    if (!confirm(`¿Eliminar al usuario "${targetUser.nombre}" (${targetUser.username})?`)) return;
     try {
-      await api.deleteUser(targetUser.id);
+      await api.deleteUser(confirmDelete.id);
       toast.success('Usuario eliminado correctamente');
+      setConfirmDelete(null);
       loadUsers();
     } catch (error) {
       toast.error(error.message);
@@ -87,31 +70,56 @@ export default function Users() {
   };
 
   const formatDate = (date) =>
-    new Date(date).toLocaleDateString('es-PE', {
-      year: 'numeric', month: 'short', day: 'numeric',
-    });
+    new Date(date).toLocaleDateString('es-PE', { year: 'numeric', month: 'short', day: 'numeric' });
+
+  const filtered = users.filter((u) => {
+    const matchesSearch = !search
+      || u.nombre.toLowerCase().includes(search.toLowerCase())
+      || u.username.toLowerCase().includes(search.toLowerCase());
+    const matchesRole = !roleFilter || u.rol === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const clearFilters = () => {
+    setSearch('');
+    setRoleFilter('');
+  };
+
+  const activeFilterCount = [search, roleFilter].filter(Boolean).length;
 
   if (loading) {
-    return (
-      <div className="page-container">
-        <Skeleton.CardGrid count={6} />
-      </div>
-    );
+    return <div className="page-container"><Skeleton.CardGrid count={6} /></div>;
   }
 
   return (
     <div className="page-container">
       <div className="toolbar">
-        <div className="toolbar-info">
-          <span>{users.length} usuario(s)</span>
+        <div className="toolbar-info"><span>{filtered.length} usuario(s)</span></div>
+        <div className="toolbar-filters">
+          <div className="search-box">
+            <Search size={18} />
+            <input type="text" placeholder="Buscar por nombre o usuario..."
+              value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && <button className="clear-btn" onClick={() => setSearch('')}><X size={16} /></button>}
+          </div>
+          <select className="filter-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} title="Filtrar por rol">
+            <option value="">Todos los roles</option>
+            <option value="admin">Admin</option>
+            <option value="user">Usuario</option>
+          </select>
+          {activeFilterCount > 0 && (
+            <button className="clear-btn btn-clear-filters" onClick={clearFilters} title="Limpiar todos los filtros">
+              <X size={14} /> Limpiar ({activeFilterCount})
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={18} /> Nuevo {t('user')}
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={18} />            <span>Nuevo {t('user')}</span>
-        </button>
       </div>
 
       <div className="users-grid">
-        {users.map((u) => {
+        {filtered.map((u) => {
           const isSelf = u.id === currentUser?.id;
           return (
             <div key={u.id} className={`user-card ${u.rol === 'admin' ? 'admin' : ''} ${isSelf ? 'self' : ''}`}>
@@ -121,13 +129,9 @@ export default function Users() {
                 </div>
                 <div className="user-card-role">
                   {u.rol === 'admin' ? (
-                    <span className="badge badge-admin">
-                      <Shield size={12} /> Admin
-                    </span>
+                    <span className="badge badge-admin"><Shield size={12} /> Admin</span>
                   ) : (
-                    <span className="badge badge-user">
-                      <ShieldOff size={12} /> Usuario
-                    </span>
+                    <span className="badge badge-user"><ShieldOff size={12} /> Usuario</span>
                   )}
                 </div>
               </div>
@@ -142,13 +146,9 @@ export default function Users() {
               <div className="user-card-footer">
                 <span className="user-card-date">Creado: {formatDate(u.created_at)}</span>
                 <div className="user-card-actions">
-                  <button className="btn-icon" onClick={() => openEdit(u)} title="Editar">
-                    <Edit size={14} />
-                  </button>
+                  <button className="btn-icon" onClick={() => openEdit(u)} title="Editar"><Edit size={14} /></button>
                   {!isSelf && (
-                    <button className="btn-icon danger" onClick={() => handleDelete(u)} title="Eliminar">
-                      <Trash size={14} />
-                    </button>
+                    <button className="btn-icon danger" onClick={() => setConfirmDelete(u)} title="Eliminar"><Trash size={14} /></button>
                   )}
                 </div>
               </div>
@@ -157,73 +157,19 @@ export default function Users() {
         })}
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? `Editar ${t('user')}` : `Nuevo ${t('user')}`}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Nombre *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.nombre}
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    placeholder="Nombre completo"
-                    autoFocus
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Usuario *</label>
-                  <input
-                    type="text"
-                    required={!editing}
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    placeholder="Nombre de usuario"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{editing ? 'Nueva contraseña (dejar vacío para mantener)' : 'Contraseña *'}</label>
-                  <input
-                    type="password"
-                    required={!editing}
-                    minLength={6}
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    placeholder={editing ? '•••••• (dejar vacío = sin cambios)' : 'Mínimo 6 caracteres'}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Rol</label>
-                  <select
-                    value={form.rol}
-                    onChange={(e) => setForm({ ...form, rol: e.target.value })}
-                  >
-                    <option value="user">Usuario</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : editing ? 'Actualizar' : `Crear ${t('user')}`}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <UserFormModal editing={editing} onSave={handleSave}
+          onClose={() => setShowModal(false)} t={t} />
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Eliminar Usuario"
+        message={`¿Estás seguro de eliminar a "${confirmDelete?.nombre}" (@${confirmDelete?.username})? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        onConfirm={handleDelete}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

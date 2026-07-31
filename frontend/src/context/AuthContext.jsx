@@ -1,91 +1,120 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api/client';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
+/**
+ * Safely parse JSON from localStorage with fallback
+ */
+function getStored(key) {
+  try {
+    const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
-  });
-  const [business, setBusiness] = useState(() => {
-    const saved = localStorage.getItem('business');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [loading, setLoading] = useState(true);
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
 
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => getStored('user'));
+  const [business, setBusiness] = useState(() => getStored('business'));
+  const [loading, setLoading] = useState(true);
+  const verifiedRef = useRef(false);
+
+  // Verify token on mount — only runs once
   useEffect(() => {
+    if (verifiedRef.current) return;
+    verifiedRef.current = true;
+
     const token = localStorage.getItem('token');
-    if (token) {
-      fetch('/api/auth/verify', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => {
-          if (res.status === 401) {
-            // Token explícitamente inválido — limpiar sesión
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('business');
-            localStorage.removeItem('businessConfig');
-            setUser(null);
-            setBusiness(null);
-            return null;
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (data && data.valid) {
-            setUser(data.user);
-            setBusiness(data.business || null);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            if (data.business) {
-              localStorage.setItem('business', JSON.stringify(data.business));
-            }
-          }
-          // Si data.valid === false pero no es 401 (ej: token expirado),
-          // mantenemos la sesión en localStorage (el login redirigirá)
-        })
-        .catch(() => {
-          // Error de red (timeout, cold start) — NO limpiar sesión
-          // Mantenemos user/business de localStorage para no forzar login
-          console.warn('No se pudo verificar el token — usando sesión en caché');
-        })
-        .finally(() => setLoading(false));
-    } else {
+    if (!token) {
       setLoading(false);
+      return;
     }
+
+    api.verifyToken()
+      .then((data) => {
+        if (data?.valid && data?.user) {
+          setUser(data.user);
+          // Merge business data if available
+          if (data.business) {
+            setBusiness(data.business);
+            localStorage.setItem('business', JSON.stringify(data.business));
+          }
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else {
+          // Token invalid but not expired — clear session
+          clearSession();
+        }
+      })
+      .catch((err) => {
+        // Network error — keep cached session to avoid forcing re-login
+        console.warn('Token verification unavailable, using cached session:', err.message);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const login = async (username, password) => {
-    const data = await api.login(username, password);
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    localStorage.setItem('business', JSON.stringify(data.business));
-    setUser(data.user);
-    setBusiness(data.business);
-    return data;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('business');
-    localStorage.removeItem('businessConfig');
+  /**
+   * Clear all auth state
+   */
+  const clearSession = useCallback(() => {
+    const keys = ['token', 'user', 'business', 'businessConfig'];
+    keys.forEach(key => localStorage.removeItem(key));
     setUser(null);
     setBusiness(null);
-    window.location.href = '/login';
-  };
+  }, []);
 
-  const updateUser = (newUser, newToken) => {
+  /**
+   * Login with username and password
+   */
+  const login = useCallback(async (username, password) => {
+    const data = await api.login(username, password);
+
+    if (!data.token || !data.user) {
+      throw new Error('Respuesta inválida del servidor');
+    }
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.business) {
+      localStorage.setItem('business', JSON.stringify(data.business));
+      setBusiness(data.business);
+    }
+    setUser(data.user);
+    return data;
+  }, []);
+
+  /**
+   * Logout — clear everything and redirect
+   */
+  const logout = useCallback(() => {
+    clearSession();
+    window.location.href = '/login';
+  }, [clearSession]);
+
+  /**
+   * Update user data (profile changes, etc.)
+   */
+  const updateUser = useCallback((newUser, newToken) => {
     if (newToken) {
       localStorage.setItem('token', newToken);
     }
     localStorage.setItem('user', JSON.stringify(newUser));
     setUser(newUser);
-  };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, business, login, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{
+      user,
+      business,
+      loading,
+      login,
+      logout,
+      updateUser,
+      isAdmin: user?.rol === 'admin',
+      isSuperAdmin: user?.rol === 'super_admin',
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { search, page = '1', limit = '100' } = req.query;
+    const { search, has_points, sort, page = '1', limit = '100' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 100));
@@ -22,6 +22,15 @@ router.get('/', async (req, res) => {
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
       paramIndex += 3;
     }
+
+    if (has_points === 'true') {
+      whereClause += ' AND c.puntos > 0';
+    }
+
+    let orderBy = 'c.nombre ASC';
+    if (sort === 'gasto') orderBy = 'total_gastado DESC';
+    else if (sort === 'compras') orderBy = 'total_compras DESC';
+    else if (sort === 'puntos') orderBy = 'c.puntos DESC';
 
     // Count total
     const countResult = await queryOne(
@@ -38,7 +47,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN sales s ON c.id = s.customer_id AND s.business_id = $1
        ${whereClause}
        GROUP BY c.id
-       ORDER BY c.nombre ASC
+       ORDER BY ${orderBy}
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, limitNum, offset]
     );

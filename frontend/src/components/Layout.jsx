@@ -12,8 +12,11 @@ import {
   Suppliers,
   Sales,
   Purchases,
+  Services as ServicesIcon,
   Reports,
   Users,
+  Shield,
+  Building2,
 } from './Icons';
 
 export default function Layout() {
@@ -22,36 +25,50 @@ export default function Layout() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const { user, business, logout } = useAuth();
-  const { t } = useBusinessConfig();
+  const { t, tipo } = useBusinessConfig();
   const location = useLocation();
   const navigate = useNavigate();
 
   // Icon and color mapping for each section
   const navIconMap = {
-    '/': { icon: DashboardIcon, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.12)' },
-    '/products': { icon: Products, color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
-    '/categories': { icon: Tags, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
-    '/customers': { icon: Customers, color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
-    '/suppliers': { icon: Suppliers, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
-    '/purchases': { icon: Purchases, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
-    '/sales': { icon: Sales, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
-    '/reports': { icon: Reports, color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.12)' },
-    '/users': { icon: Users, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.12)' },
+    '/app': { icon: DashboardIcon, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.12)' },
+    '/app/products': { icon: Products, color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
+    '/app/categories': { icon: Tags, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+    '/app/customers': { icon: Customers, color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+    '/app/suppliers': { icon: Suppliers, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+    '/app/purchases': { icon: Purchases, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
+    '/app/sales': { icon: Sales, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
+    '/app/services': { icon: ServicesIcon, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' },
+    '/app/reports': { icon: Reports, color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.12)' },
+    '/app/users': { icon: Users, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.12)' },
+    '/app/admin': { icon: Shield, color: '#dc2626', bg: 'rgba(220, 38, 38, 0.12)' },
+    '/app/admin/businesses': { icon: Building2, color: '#dc2626', bg: 'rgba(220, 38, 38, 0.12)' },
+    '/app/admin/users': { icon: Users, color: '#dc2626', bg: 'rgba(220, 38, 38, 0.12)' },
   };
 
+  // Services module (Car Wash / Mecánica) is only available for carwash-type businesses
+  const showServices = tipo === 'carwash';
+
   const navItems = [
-    { to: '/', label: t('dashboard'), end: true },
-    { to: '/products', label: t('product_plural') },
-    { to: '/categories', label: t('category_plural') },
-    { to: '/customers', label: t('customer_plural') },
-    { to: '/suppliers', label: t('supplier_plural') },
-    { to: '/purchases', label: t('purchase_plural') },
-    { to: '/sales', label: t('sale_plural') },
-    { to: '/reports', label: t('report_plural') },
+    { to: '/app', label: t('dashboard'), end: true },
+    { to: '/app/products', label: t('product_plural') },
+    { to: '/app/categories', label: t('category_plural') },
+    { to: '/app/customers', label: t('customer_plural') },
+    { to: '/app/suppliers', label: t('supplier_plural') },
+    { to: '/app/purchases', label: t('purchase_plural') },
+    { to: '/app/sales', label: t('sale_plural') },
+    ...(showServices ? [{ to: '/app/services', label: t('service_plural') }] : []),
+    { to: '/app/reports', label: t('report_plural') },
   ];
 
   const adminNavItems = [
-    { to: '/users', label: t('user_plural') },
+    { to: '/app/users', label: t('user_plural') },
+  ];
+
+  const superAdminNavItems = [
+    { to: '/app/admin', label: 'Panel Admin', end: true },
+    { to: '/app/admin/businesses', label: 'Negocios' },
+    { to: '/app/admin/users', label: 'Usuarios' },
   ];
 
   const renderNavIcon = (to) => {
@@ -81,8 +98,16 @@ export default function Layout() {
     return () => clearInterval(interval);
   }, []);
 
-  const pageTitle = navItems.find(
-    (item) => item.to === location.pathname || (item.to !== '/' && location.pathname.startsWith(item.to))
+  const pageTitle = [
+    // Admin routes first (more specific)
+    { to: '/app/admin/businesses', label: 'Negocios' },
+    { to: '/app/admin/users', label: 'Usuarios' },
+    { to: '/app/admin', label: 'Panel Admin' },
+    // Regular nav items
+    ...navItems,
+  ].find(
+    (item) => item.to === location.pathname || 
+      (!item.end && item.to !== '/' && location.pathname.startsWith(item.to))
   )?.label || 'Dashboard';
 
   return (
@@ -110,7 +135,7 @@ export default function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
+          {user?.rol !== 'super_admin' && navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -123,6 +148,23 @@ export default function Layout() {
             </NavLink>
           ))}
 
+          {user?.rol === 'super_admin' && (
+            <>
+              <div className="nav-section-label">Super Admin</div>
+              {superAdminNavItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  {renderNavIcon(item.to)}
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </>
+          )}
           {user?.rol === 'admin' && (
             <>
               <div className="nav-section-label">Admin</div>
@@ -149,7 +191,7 @@ export default function Layout() {
             </div>
             <div className="user-details">
               <span className="user-name">{user?.nombre || 'Usuario'}</span>
-              <span className="user-role">{user?.rol === 'admin' ? 'Administrador' : 'Usuario'}</span>
+              <span className="user-role">{user?.rol === 'super_admin' ? 'Super Admin' : user?.rol === 'admin' ? 'Administrador' : 'Usuario'}</span>
             </div>
           </div>
         </div>
@@ -172,7 +214,7 @@ export default function Layout() {
                 className="notif-btn"
                 onClick={() => {
                   if (lowStockCount > 0) {
-                    navigate('/products?low_stock=1');
+                    navigate('/app/products?low_stock=1');
                   } else {
                     setNotifOpen(!notifOpen);
                   }
@@ -218,10 +260,10 @@ export default function Layout() {
                   <div className="user-dropdown">
                     <div className="dropdown-header">
                       <span className="dropdown-user-name">{user?.nombre}</span>
-                      <span className="dropdown-user-role">{user?.rol === 'admin' ? 'Administrador' : 'Usuario'}</span>
+                      <span className="dropdown-user-role">{user?.rol === 'super_admin' ? 'Super Admin' : user?.rol === 'admin' ? 'Administrador' : 'Usuario'}</span>
                     </div>
                     <hr />
-                    <NavLink to="/profile" className="dropdown-item" onClick={() => setUserMenuOpen(false)}>
+                    <NavLink to="/app/profile" className="dropdown-item" onClick={() => setUserMenuOpen(false)}>
                       <span>Mi Perfil</span>
                     </NavLink>
                     <hr />

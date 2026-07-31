@@ -7,43 +7,89 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { startDate, endDate, supplier_id } = req.query;
+    const { search, startDate, endDate, supplier_id, page = '1', limit = '50' } = req.query;
 
-    let query = `
-      SELECT p.*, 
-        s.nombre as supplier_name,
-        pr.nombre as product_name,
-        pr.sku as product_sku
-      FROM purchases p
-      LEFT JOIN suppliers s ON p.supplier_id = s.id
-      LEFT JOIN products pr ON p.product_id = pr.id
-      WHERE p.business_id = $1
-    `;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 50));
+    const offset = (pageNum - 1) * limitNum;
+
+    let whereClause = 'WHERE p.business_id = $1';
     const params = [business_id];
     let paramIdx = 2;
 
+    if (search) {
+      whereClause += ` AND (pr.nombre ILIKE $${paramIdx} OR pr.sku ILIKE $${paramIdx + 1} OR s.nombre ILIKE $${paramIdx + 2})`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      paramIdx += 3;
+    }
+
     if (startDate) {
-      query += ` AND p.created_at::DATE >= $${paramIdx}::DATE`;
+      whereClause += ` AND p.created_at::DATE >= $${paramIdx}::DATE`;
       params.push(startDate);
       paramIdx++;
     }
 
     if (endDate) {
-      query += ` AND p.created_at::DATE <= $${paramIdx}::DATE`;
+      whereClause += ` AND p.created_at::DATE <= $${paramIdx}::DATE`;
       params.push(endDate);
       paramIdx++;
     }
 
     if (supplier_id) {
-      query += ` AND p.supplier_id = $${paramIdx}`;
+      whereClause += ` AND p.supplier_id = $${paramIdx}`;
       params.push(supplier_id);
       paramIdx++;
     }
 
-    query += ' ORDER BY p.created_at DESC';
+    const fromJoin = `
+      FROM purchases p
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
+      LEFT JOIN products pr ON p.product_id = pr.id
+    `;
 
-    const purchases = await queryAll(query, params);
-    res.json(purchases);
+    // Totals over the full filtered set (not just current page)
+    const totals = await queryOne(
+      `SELECT
+         COALESCE(SUM(p.cantidad), 0)::int as cantidad,
+         COALESCE(SUM(p.total), 0) as total,
+         COUNT(DISTINCT p.supplier_id)::int as proveedores
+       ${fromJoin}
+       ${whereClause}`,
+      params
+    );
+
+    // Count total
+    const countResult = await queryOne(
+      `SELECT COUNT(*)::int as total ${fromJoin} ${whereClause}`,
+      params
+    );
+
+    const purchases = await queryAll(
+      `SELECT p.*,
+         s.nombre as supplier_name,
+         pr.nombre as product_name,
+         pr.sku as product_sku
+       ${fromJoin}
+       ${whereClause}
+       ORDER BY p.created_at DESC
+       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+      [...params, limitNum, offset]
+    );
+
+    res.json({
+      data: purchases,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: countResult.total,
+        totalPages: Math.ceil(countResult.total / limitNum)
+      },
+      totals: {
+        cantidad: totals?.cantidad || 0,
+        total: totals?.total || 0,
+        proveedores: totals?.proveedores || 0
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

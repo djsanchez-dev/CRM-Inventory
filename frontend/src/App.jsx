@@ -17,9 +17,13 @@ const Customers = lazy(() => import('./pages/Customers'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Sales = lazy(() => import('./pages/Sales'));
 const Purchases = lazy(() => import('./pages/Purchases'));
+const Services = lazy(() => import('./pages/Services'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Users = lazy(() => import('./pages/Users'));
 const Profile = lazy(() => import('./pages/Profile'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminBusinesses = lazy(() => import('./pages/AdminBusinesses'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -68,9 +72,13 @@ function AppContent() {
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="sales" element={<Sales />} />
           <Route path="purchases" element={<Purchases />} />
+          <Route path="services" element={<Services />} />
           <Route path="reports" element={<Reports />} />
           <Route path="users" element={<Users />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/businesses" element={<AdminBusinesses />} />
+          <Route path="admin/users" element={<AdminUsers />} />
         </Route>
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

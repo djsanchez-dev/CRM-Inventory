@@ -15,14 +15,18 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { FileDown, FileText, Dollar, Package, ShoppingCart, Trending, Truck, TrendingDown } from '../components/Icons';
+import { FileDown, FileText, Dollar, Package, ShoppingCart, Trending, Truck, TrendingDown, Car, Wrench, Droplets, Activity } from '../components/Icons';
 import DateRangeFilter from '../components/DateRangeFilter';
+import { useBusinessConfig } from '../context/BusinessConfig';
 import { exportReportsCSV, exportReportsPDF } from '../utils/export';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#f97316', '#14b8a6'];
 
 export default function Reports() {
+  const { tipo } = useBusinessConfig();
+  const showServices = tipo === 'carwash';
   const [data, setData] = useState(null);
+  const [servicesReport, setServicesReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '' });
 
@@ -41,8 +45,12 @@ export default function Reports() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const result = await api.getSupplierSpending(buildParams());
+      const [result, services] = await Promise.all([
+        api.getSupplierSpending(buildParams()),
+        api.getServicesReport(buildParams()).catch(() => null),
+      ]);
       setData(result);
+      setServicesReport(services);
     } catch (error) {
       console.error('Error loading reports:', error);
     } finally {
@@ -149,6 +157,162 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      {/* ===== Services Report (Car Wash + Mecánica) — only for carwash businesses ===== */}
+      {showServices && servicesReport && (
+        <>
+          {/* Services Summary Cards */}
+          <div className="stats-grid" style={{ marginTop: 8 }}>
+            <div className="stat-card" style={{ cursor: 'default' }}>
+              <div className="stat-icon" style={{ background: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9' }}>
+                <Droplets size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-label">Carros Lavados</span>
+                <span className="stat-value">{servicesReport.totals.carwash_count}</span>
+                <span className="stat-sub">{formatCurrency(servicesReport.totals.carwash_ingreso)}</span>
+              </div>
+            </div>
+            <div className="stat-card" style={{ cursor: 'default' }}>
+              <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                <Wrench size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-label">Servicios Mecánicos</span>
+                <span className="stat-value">{servicesReport.totals.mecanica_count}</span>
+                <span className="stat-sub">{formatCurrency(servicesReport.totals.mecanica_ingreso)}</span>
+              </div>
+            </div>
+            <div className="stat-card" style={{ cursor: 'default' }}>
+              <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+                <Activity size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-label">Total Servicios</span>
+                <span className="stat-value">{servicesReport.totals.total_servicios}</span>
+                <span className="stat-sub">carwash + mecánica</span>
+              </div>
+            </div>
+            <div className="stat-card" style={{ cursor: 'default' }}>
+              <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                <Car size={24} />
+              </div>
+              <div className="stat-info">
+                <span className="stat-label">Ingreso por Servicios</span>
+                <span className="stat-value">{formatCurrency(servicesReport.totals.ingreso_total)}</span>
+                <span className="stat-sub">del período seleccionado</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Services Charts */}
+          {servicesReport.dailyTrend.length > 0 && (
+            <div className="charts-grid">
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>Servicios por Día</h3>
+                </div>
+                <div className="chart-body">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={servicesReport.dailyTrend} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="fecha" stroke="#9ca3af" fontSize={11} />
+                      <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
+                      <Tooltip
+                        contentStyle={{
+                          background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        }}
+                        formatter={(value) => [formatCurrency(value), 'Ingreso']}
+                      />
+                      <Line type="monotone" dataKey="ingreso" stroke="#0ea5e9" strokeWidth={2} dot={{ fill: '#0ea5e9', r: 3 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="chart-card">
+                <div className="chart-header">
+                  <h3>Distribución por Tipo</h3>
+                </div>
+                <div className="chart-body">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={servicesReport.byTipo.map((t) => ({
+                          ...t,
+                          nombre: t.tipo === 'carwash' ? 'Car Wash' : 'Mecánica',
+                        }))}
+                        cx="50%" cy="50%" innerRadius={55} outerRadius={95} paddingAngle={4}
+                        dataKey="total" nameKey="nombre"
+                      >
+                        <Cell fill="#0ea5e9" />
+                        <Cell fill="#f59e0b" />
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                        formatter={(value, name) => [`${value} servicio(s)`, name]}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Top Services Table */}
+          {servicesReport.topServices.length > 0 && (
+            <div className="table-card" style={{ marginBottom: 24 }}>
+              <div className="table-card-header">
+                <h3>Servicios Más Realizados</h3>
+              </div>
+              <div className="table-card-body">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Tipo</th>
+                      <th>Servicio</th>
+                      <th>Veces</th>
+                      <th>Ingreso</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {servicesReport.topServices.map((svc, index) => (
+                      <tr key={index}>
+                        <td><span className="purchase-id">#{index + 1}</span></td>
+                        <td>
+                          <span className="badge" style={{
+                            background: svc.tipo === 'carwash' ? 'rgba(14,165,233,0.12)' : 'rgba(245,158,11,0.12)',
+                            color: svc.tipo === 'carwash' ? '#0ea5e9' : '#f59e0b',
+                          }}>
+                            {svc.tipo === 'carwash' ? <Droplets size={12} style={{ marginRight: 4 }} /> : <Wrench size={12} style={{ marginRight: 4 }} />}
+                            {svc.tipo === 'carwash' ? 'Car Wash' : 'Mecánica'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="product-name-cell">
+                            <div className="product-icon" style={{
+                              background: svc.tipo === 'carwash' ? 'rgba(14,165,233,0.1)' : 'rgba(245,158,11,0.1)',
+                              color: svc.tipo === 'carwash' ? '#0ea5e9' : '#f59e0b',
+                            }}>
+                              {svc.tipo === 'carwash' ? <Droplets size={16} /> : <Wrench size={16} />}
+                            </div>
+                            <span className="product-name">{svc.nombre}</span>
+                          </div>
+                        </td>
+                        <td><span className="qty-badge">{svc.total}</span></td>
+                        <td className="currency">{formatCurrency(svc.ingreso)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Monthly Profitability Trend */}
       {data.monthlyProfitability && data.monthlyProfitability.length > 0 && (
@@ -339,7 +503,7 @@ export default function Reports() {
                 <tr>
                   <td colSpan={8} className="empty-cell">
                     <div className="empty-state">
-                      <TrendingUp size={48} />
+                      <Trending size={48} />
                       <h3>No hay datos de gastos</h3>
                       <p>Registra compras con proveedores para ver los reportes</p>
                     </div>
@@ -493,7 +657,7 @@ export default function Reports() {
                             color: supplier.margen_porcentaje >= 0 ? '#10b981' : '#ef4444',
                           }}>
                           {supplier.margen_porcentaje >= 0 ? (
-                            <TrendingUp size={12} style={{ marginRight: 4 }} />
+                            <Trending size={12} style={{ marginRight: 4 }} />
                           ) : (
                             <TrendingDown size={12} style={{ marginRight: 4 }} />
                           )}

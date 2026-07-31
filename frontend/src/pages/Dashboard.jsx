@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { useBusinessConfig } from '../context/BusinessConfig';
-import Logo from '../components/Logo';
 import Skeleton from '../components/Skeleton';
-import { FileDown, FileText } from '../components/Icons';
+import { FileDown, FileText, Package, Tags, Users, Truck, Dollar, Trending, TrendingDown, AlertCircle } from '../components/Icons';
 import { exportDashboardCSV, exportDashboardPDF } from '../utils/export';
 import {
   XAxis,
@@ -85,11 +84,10 @@ export default function Dashboard() {
   return (
     <div className="dashboard">
       {/* Low Stock Alert Banner */}
-      {lowStockProducts.length > 0 && (
-        <div className="low-stock-alert-banner">
+      {lowStockProducts.length > 0 && (            <div className="low-stock-alert-banner">
           <div className="alert-banner-content">
-            <div className="alert-banner-icon">
-              <Logo variant="glyph" size={24} label="!" />
+            <div className="alert-banner-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+              <AlertCircle size={24} />
             </div>
             <div className="alert-banner-text">
               <strong>{lowStockProducts.length} {t('product_plural').toLowerCase()}</strong> con {t('stock').toLowerCase()} bajo
@@ -133,37 +131,36 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="stats-grid">
-        <div className="stat-card" onClick={() => navigate('/products')}>
-          <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
-            <Logo variant="glyph" size={28} label="P" />
+        <div className="stat-card" onClick={() => navigate('/products')}>            <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
+              <Package size={28} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">{t('product_plural')}</span>
+              <span className="stat-value">{data.totalProducts}</span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-label">{t('product_plural')}</span>
-            <span className="stat-value">{data.totalProducts}</span>
+          <div className="stat-card" onClick={() => navigate('/categories')}>
+            <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+              <Tags size={28} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">{t('category_plural')}</span>
+              <span className="stat-value">{data.totalCategories}</span>
+            </div>
           </div>
-        </div>
-        <div className="stat-card" onClick={() => navigate('/categories')}>
-          <div className="stat-icon" style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-            <Logo variant="glyph" size={28} label="C" />
+          <div className="stat-card" onClick={() => navigate('/customers')}>
+            <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+              <Users size={28} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-label">{t('customer_plural')}</span>
+              <span className="stat-value">{data.totalCustomers}</span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-label">{t('category_plural')}</span>
-            <span className="stat-value">{data.totalCategories}</span>
-          </div>
-        </div>
-        <div className="stat-card" onClick={() => navigate('/customers')}>
-          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-            <Logo variant="glyph" size={28} label="U" />
-          </div>
-          <div className="stat-info">
-            <span className="stat-label">{t('customer_plural')}</span>
-            <span className="stat-value">{data.totalCustomers}</span>
-          </div>
-        </div>
-        <div className="stat-card" onClick={() => navigate('/suppliers')}>
-          <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-            <Logo variant="glyph" size={28} label="S" />
-          </div>
+          <div className="stat-card" onClick={() => navigate('/suppliers')}>
+            <div className="stat-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+              <Truck size={28} />
+            </div>
           <div className="stat-info">
             <span className="stat-label">{t('supplier_plural')}</span>
             <span className="stat-value">{data.totalSuppliers}</span>
@@ -172,10 +169,9 @@ export default function Dashboard() {
       </div>
 
       {/* Financial Summary */}
-      <div className="financial-cards">
-        <div className="fin-card ingresos">
+      <div className="financial-cards">          <div className="fin-card ingresos">
           <div className="fin-icon">
-            <Logo variant="glyph" size={20} label="$" />
+            <Trending size={20} />
           </div>
           <div className="fin-info">
             <span className="fin-label">Ingresos Totales</span>
@@ -184,7 +180,7 @@ export default function Dashboard() {
         </div>
         <div className="fin-card inversion">
           <div className="fin-icon">
-            <Logo variant="glyph" size={20} label="I" />
+            <Dollar size={20} />
           </div>
           <div className="fin-info">
             <span className="fin-label">Inversión en Inventario</span>
@@ -193,7 +189,7 @@ export default function Dashboard() {
         </div>
         <div className="fin-card ganancia">
           <div className="fin-icon">
-            <Logo variant="glyph" size={20} label="+" />
+            <TrendingDown size={20} />
           </div>
           <div className="fin-info">
             <span className="fin-label">Ganancia Potencial</span>
@@ -206,7 +202,7 @@ export default function Dashboard() {
           style={lowStockProducts.length > 0 ? { cursor: 'pointer' } : {}}
         >
           <div className="fin-icon">
-            <Logo variant="glyph" size={20} label="!" />
+            <AlertCircle size={20} />
           </div>
           <div className="fin-info">
             <span className="fin-label">{t('stock')} Bajo</span>
@@ -220,7 +216,7 @@ export default function Dashboard() {
         <div className="low-stock-section">
           <div className="low-stock-header">
             <h3>
-              <Logo variant="glyph" size={18} label="!" />
+              <AlertCircle size={18} />
               Alertas de {t('stock')} Bajo
             </h3>
             <button
@@ -251,7 +247,7 @@ export default function Dashboard() {
                       <td>
                         <div className="product-name-cell">
                           <div className="product-icon">
-                            <Logo variant="glyph" size={16} label="P" />
+                            <Package size={16} />
                           </div>
                           <span className="product-name">{product.nombre}</span>
                         </div>

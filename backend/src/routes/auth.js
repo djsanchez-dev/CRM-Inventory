@@ -1,7 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { queryOne, queryAll } = require('../database');
+const { queryOne } = require('../database');
+const { logger } = require('../middleware/logger');
+const { normalizeType } = require('../config/businessTypes');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'crm-inventario-secret-key-2024';
@@ -11,9 +13,10 @@ router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // LEFT JOIN so super_admin (business_id = null) also gets a result
     const user = await queryOne(
       `SELECT u.*, b.nombre as business_name, b.tipo_negocio 
-       FROM users u JOIN businesses b ON u.business_id = b.id 
+       FROM users u LEFT JOIN businesses b ON u.business_id = b.id 
        WHERE u.username = $1`,
       [username]
     );
@@ -50,7 +53,7 @@ router.post('/login', async (req, res) => {
       business: {
         id: user.business_id,
         nombre: user.business_name,
-        tipo_negocio: user.tipo_negocio,
+        tipo_negocio: normalizeType(user.tipo_negocio),
       },
     });
   } catch (error) {
@@ -66,9 +69,71 @@ router.get('/verify', async (req, res) => {
       return res.status(200).json({ valid: false });
     }
     const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ valid: true, user: decoded });
+    // Fetch business info to include in response
+    let business = null;
+    if (decoded.business_id) {
+      const row = await queryOne(
+        'SELECT id, nombre, tipo_negocio FROM businesses WHERE id = $1',
+        [decoded.business_id]
+      );
+      if (row) {
+        business = {
+          id: row.id,
+          nombre: row.nombre,
+          tipo_negocio: normalizeType(row.tipo_negocio),
+        };
+      }
+    }
+    res.json({
+      valid: true,
+      user: decoded,
+      business: business || null,
+    });
   } catch (error) {
     res.status(200).json({ valid: false });
+  }
+});
+
+// POST /api/auth/refresh — Issue a new token
+router.post('/refresh', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Token requerido' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET, { ignoreExpiration: true });
+    } catch (e) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    // Verify user still exists and belongs to business
+    const user = await queryOne(
+      'SELECT id, username, nombre, rol, business_id FROM users WHERE id = $1',
+      [decoded.id]
+    );
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Issue new token with 24h expiry
+    const newToken = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        nombre: user.nombre,
+        rol: user.rol,
+        business_id: user.business_id,
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({ token: newToken });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -118,7 +183,7 @@ router.post('/register', async (req, res) => {
       rol: rol || 'user',
     });
   } catch (error) {
-    console.error(error);
+    logger.error('User registration failed', { error: error.message, stack: error.stack });
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

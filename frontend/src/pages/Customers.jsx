@@ -5,6 +5,8 @@ import { useToast } from '../components/Toast';
 import Skeleton from '../components/Skeleton';
 import Pagination from '../components/Pagination';
 import { Plus, Search, Edit, Trash, Users, X, Mail, Phone, MapPin, Star } from '../components/Icons';
+import ConfirmDialog from '../components/ConfirmDialog';
+import CustomerFormModal from '../components/customers/CustomerFormModal';
 
 export default function Customers() {
   const { t } = useBusinessConfig();
@@ -12,31 +14,27 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [hasPoints, setHasPoints] = useState(false);
+  const [sortBy, setSortBy] = useState('nombre');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    direccion: '',
-    tipo_documento: 'DNI',
-    num_documento: '',
-  });
-  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => { loadCustomers(); }, [page]);
   useEffect(() => {
     setPage(1);
     const timeout = setTimeout(loadCustomers, 300);
     return () => clearTimeout(timeout);
-  }, [search]);
+  }, [search, hasPoints, sortBy]);
 
   const loadCustomers = async () => {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      if (hasPoints) params.set('has_points', 'true');
+      if (sortBy !== 'nombre') params.set('sort', sortBy);
       params.set('page', page.toString());
       const result = await api.getCustomers(`?${params.toString()}`);
       setCustomers(result.data || []);
@@ -48,28 +46,19 @@ export default function Customers() {
     }
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ nombre: '', email: '', telefono: '', direccion: '', tipo_documento: 'DNI', num_documento: '' });
-    setShowModal(true);
+  const clearFilters = () => {
+    setSearch('');
+    setHasPoints(false);
+    setSortBy('nombre');
+    setPage(1);
   };
 
-  const openEdit = (customer) => {
-    setEditing(customer);
-    setForm({
-      nombre: customer.nombre || '',
-      email: customer.email || '',
-      telefono: customer.telefono || '',
-      direccion: customer.direccion || '',
-      tipo_documento: customer.tipo_documento || 'DNI',
-      num_documento: customer.num_documento || '',
-    });
-    setShowModal(true);
-  };
+  const activeFilterCount = [search, hasPoints, sortBy !== 'nombre'].filter(Boolean).length;
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const openCreate = () => { setEditing(null); setShowModal(true); };
+  const openEdit = (customer) => { setEditing(customer); setShowModal(true); };
+
+  const handleSave = async (form) => {
     try {
       if (editing) {
         await api.updateCustomer(editing.id, form);
@@ -82,16 +71,15 @@ export default function Customers() {
       loadCustomers();
     } catch (error) {
       toast.error(error.message);
-    } finally {
-      setSaving(false);
     }
   };
 
-  const handleDelete = async (customer) => {
-    if (!confirm(`¿Eliminar ${t('customer').toLowerCase()} "${customer.nombre}"?`)) return;
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
     try {
-      await api.deleteCustomer(customer.id);
+      await api.deleteCustomer(confirmDelete.id);
       toast.success('Cliente eliminado correctamente');
+      setConfirmDelete(null);
       loadCustomers();
     } catch (error) {
       toast.error(error.message);
@@ -102,11 +90,7 @@ export default function Customers() {
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v);
 
   if (loading && customers.length === 0) {
-    return (
-      <div className="page-container">
-        <Skeleton.CardGrid count={6} />
-      </div>
-    );
+    return <div className="page-container"><Skeleton.CardGrid count={6} /></div>;
   }
 
   return (
@@ -114,21 +98,29 @@ export default function Customers() {
       <div className="toolbar">
         <div className="search-box">
           <Search size={18} />
-          <input
-            type="text"
-            placeholder={`Buscar ${t('customer_plural').toLowerCase()}...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {search && (
-            <button className="clear-btn" onClick={() => setSearch('')}>
-              <X size={16} />
+          <input type="text" placeholder={`Buscar ${t('customer_plural').toLowerCase()}...`}
+            value={search} onChange={(e) => setSearch(e.target.value)} />
+          {search && <button className="clear-btn" onClick={() => setSearch('')}><X size={16} /></button>}
+        </div>
+        <div className="toolbar-filters">
+          <label className="filter-checkbox">
+            <input type="checkbox" checked={hasPoints} onChange={(e) => setHasPoints(e.target.checked)} />
+            Con puntos
+          </label>
+          <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} title="Ordenar clientes">
+            <option value="nombre">Nombre (A–Z)</option>
+            <option value="gasto">Mayor gasto</option>
+            <option value="compras">Más compras</option>
+            <option value="puntos">Más puntos</option>
+          </select>
+          {activeFilterCount > 0 && (
+            <button className="clear-btn btn-clear-filters" onClick={clearFilters} title="Limpiar todos los filtros">
+              <X size={14} /> Limpiar ({activeFilterCount})
             </button>
           )}
         </div>
         <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={18} />
-          <span>Nuevo {t('customer')}</span>
+          <Plus size={18} /> Nuevo {t('customer')}
         </button>
       </div>
 
@@ -136,42 +128,17 @@ export default function Customers() {
         {customers.map((customer) => (
           <div key={customer.id} className="customer-card">
             <div className="customer-card-header">
-              <div className="customer-avatar-lg">
-                {customer.nombre.charAt(0).toUpperCase()}
-              </div>
+              <div className="customer-avatar-lg">{customer.nombre.charAt(0).toUpperCase()}</div>
               <div className="customer-card-actions">
-                <button className="btn-icon" onClick={() => openEdit(customer)} title="Editar">
-                  <Edit size={14} />
-                </button>
-                <button
-                  className="btn-icon danger"
-                  onClick={() => handleDelete(customer)}
-                  title="Eliminar"
-                >
-                  <Trash size={14} />
-                </button>
+                <button className="btn-icon" onClick={() => openEdit(customer)} title="Editar"><Edit size={14} /></button>
+                <button className="btn-icon danger" onClick={() => setConfirmDelete(customer)} title="Eliminar"><Trash size={14} /></button>
               </div>
             </div>
             <h3 className="customer-name">{customer.nombre}</h3>
             <div className="customer-details">
-              {customer.email && (
-                <span className="customer-detail">
-                  <Mail size={14} />
-                  {customer.email}
-                </span>
-              )}
-              {customer.telefono && (
-                <span className="customer-detail">
-                  <Phone size={14} />
-                  {customer.telefono}
-                </span>
-              )}
-              {customer.direccion && (
-                <span className="customer-detail">
-                  <MapPin size={14} />
-                  {customer.direccion}
-                </span>
-              )}
+              {customer.email && <span className="customer-detail"><Mail size={14} />{customer.email}</span>}
+              {customer.telefono && <span className="customer-detail"><Phone size={14} />{customer.telefono}</span>}
+              {customer.direccion && <span className="customer-detail"><MapPin size={14} />{customer.direccion}</span>}
             </div>
             <div className="customer-stats">
               <div className="customer-stat">
@@ -183,15 +150,12 @@ export default function Customers() {
                 <span className="stat-value">{formatCurrency(customer.total_gastado)}</span>
               </div>
               <div className="customer-stat points-stat">
-                <span className="stat-label">
-                  <Star size={12} /> Puntos
-                </span>
+                <span className="stat-label"><Star size={12} /> Puntos</span>
                 <span className="stat-value">{customer.puntos || 0}</span>
               </div>
             </div>
           </div>
         ))}
-
         {customers.length === 0 && (
           <div className="empty-state full-width">
             <Users size={48} />
@@ -206,88 +170,19 @@ export default function Customers() {
 
       <Pagination pagination={pagination} onPageChange={setPage} />
 
-      {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? `Editar ${t('customer')}` : `Nuevo ${t('customer')}`}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Nombre *</label>
-                    <input
-                      type="text"
-                      required
-                      value={form.nombre}
-                      onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                      placeholder="Nombre completo"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="correo@ejemplo.com"
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Teléfono</label>
-                    <input
-                      type="text"
-                      value={form.telefono}
-                      onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-                      placeholder="555-0000"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Tipo Documento</label>
-                    <select
-                      value={form.tipo_documento}
-                      onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })}
-                    >
-                      <option value="DNI">DNI</option>
-                      <option value="RUC">RUC</option>
-                      <option value="Pasaporte">Pasaporte</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Dirección</label>
-                  <textarea
-                    value={form.direccion}
-                    onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-                    placeholder="Dirección completa"
-                    rows={2}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : editing ? 'Actualizar' : `Crear ${t('customer')}`}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CustomerFormModal editing={editing} onSave={handleSave}
+          onClose={() => setShowModal(false)} t={t} />
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Eliminar Cliente"
+        message={`¿Estás seguro de eliminar a "${confirmDelete?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        onConfirm={handleDelete}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

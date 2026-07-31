@@ -565,6 +565,65 @@ export async function exportReportsPDF(data, dateFilter) {
 /**
  * Exporta ventas a PDF
  */
+/**
+ * Exporta servicios a CSV
+ */
+export function exportServicesCSV(services) {
+  const columns = ['id', 'tipo', 'nombre', 'placa', 'customer_name', 'precio_raw', 'notas', 'created_at'];
+  const headers = ['#', 'Tipo', 'Servicio', 'Placa', 'Cliente', 'Precio', 'Notas', 'Fecha'];
+
+  const data = services.map((s) => ({
+    id: `#${s.id}`,
+    tipo: s.tipo === 'carwash' ? 'Car Wash' : 'Mecánica',
+    nombre: s.nombre,
+    placa: s.placa || '',
+    customer_name: s.customer_name || '',
+    precio_raw: s.precio,
+    notas: s.notas || '',
+    created_at: s.created_at,
+  }));
+
+  downloadCSV(data, columns, headers, 'servicios');
+}
+
+/**
+ * Exporta servicios a PDF
+ */
+export async function exportServicesPDF(services, fecha) {
+  try {
+    const headers = ['#', 'Hora', 'Tipo', 'Servicio', 'Placa', 'Cliente', 'Precio'];
+
+    const body = services.map((s) => [
+      `#${s.id}`,
+      new Date(s.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
+      s.tipo === 'carwash' ? 'Car Wash' : 'Mecánica',
+      s.nombre,
+      s.placa || '—',
+      s.customer_name || '—',
+      formatCurrency(s.precio),
+    ]);
+
+    // Summary row
+    const totalIngreso = services.reduce((sum, s) => sum + s.precio, 0);
+    body.push(['', '', '', 'TOTAL', '', '', formatCurrency(totalIngreso)]);
+
+    const subtitle = fecha
+      ? `Control diario — ${fecha}`
+      : `${services.length} servicio(s)`;
+
+    await downloadPDF(
+      'Reporte de Servicios',
+      subtitle,
+      headers,
+      body,
+      `servicios-${fecha || 'todos'}`
+    );
+  } catch (error) {
+    console.error('Error al exportar PDF:', error);
+    alert('Error al generar el PDF. Asegúrate de que las dependencias estén instaladas (npm install).');
+  }
+}
+
 export async function exportSalesPDF(sales) {
   try {
     const headers = ['# Venta', 'Fecha', 'Cliente', 'Items', 'Total', 'Tipo Pago'];

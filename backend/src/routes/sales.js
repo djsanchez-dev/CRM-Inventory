@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { search, startDate, endDate, customer_id, page = '1', limit = '100' } = req.query;
+    const { search, startDate, endDate, customer_id, tipo_pago, page = '1', limit = '100' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 100));
@@ -38,6 +38,12 @@ router.get('/', async (req, res) => {
     if (customer_id) {
       whereClause += ` AND s.customer_id = $${paramIdx}`;
       params.push(customer_id);
+      paramIdx++;
+    }
+
+    if (tipo_pago) {
+      whereClause += ` AND s.tipo_pago = $${paramIdx}`;
+      params.push(tipo_pago);
       paramIdx++;
     }
 

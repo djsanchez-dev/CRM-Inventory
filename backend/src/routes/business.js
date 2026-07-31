@@ -1,8 +1,9 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { queryOne, queryAll, transaction } = require('../database');
+const { queryOne, transaction } = require('../database');
 const { resolveConfig, getPreset } = require('../config/businessTypes');
+const { logger } = require('../middleware/logger');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'crm-inventario-secret-key-2024';
@@ -21,15 +22,9 @@ function requireAuth(req, res, next) {
   }
 }
 
-// POST /api/business/setup - Create first business + admin user
+// POST /api/business/setup - Create a new business + admin user (multitenant)
 router.post('/setup', async (req, res) => {
   try {
-    // Check if any business already exists
-    const existing = await queryOne('SELECT COUNT(*)::int as count FROM businesses');
-    if (existing.count > 0) {
-      return res.status(400).json({ error: 'Ya existe un negocio configurado' });
-    }
-
     const { businessName, businessType, adminUsername, adminPassword, adminName, customLabels, moneda } = req.body;
 
     if (!businessName || !adminUsername || !adminPassword || !adminName) {
@@ -119,7 +114,7 @@ router.post('/setup', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error('Business setup failed', { error: error.message, stack: error.stack });
     res.status(500).json({ error: error.message });
   }
 });
@@ -138,6 +133,17 @@ router.get('/status', async (req, res) => {
 router.get('/config', requireAuth, async (req, res) => {
   try {
     const business_id = req.user.business_id;
+
+    // Super admin doesn't have a business — return default config
+    if (!business_id) {
+      return res.json({
+        tipo: 'general',
+        moneda: 'PEN',
+        idioma: 'es',
+        labels: {},
+      });
+    }
+
     const business = await queryOne('SELECT * FROM businesses WHERE id = $1', [business_id]);
 
     if (!business) {

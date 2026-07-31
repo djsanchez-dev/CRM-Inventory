@@ -287,4 +287,73 @@ router.get('/supplier-spending', async (req, res) => {
   }
 });
 
+// GET /api/reports/services
+// Services report (carwash + mechanic): totals by type, daily trend, top services
+router.get('/services', async (req, res) => {
+  try {
+    const business_id = req.user.business_id;
+    const { startDate, endDate } = req.query;
+
+    // Dynamic date filter params start after $1
+    const pf = buildDateFilters(2, startDate, endDate, 's.');
+
+    const totals = await queryAll(
+      `SELECT
+        COUNT(*)::int as total_servicios,
+        COALESCE(SUM(s.precio), 0) as ingreso_total,
+        COALESCE(SUM(CASE WHEN s.tipo = 'carwash' THEN 1 ELSE 0 END), 0)::int as carwash_count,
+        COALESCE(SUM(CASE WHEN s.tipo = 'carwash' THEN s.precio ELSE 0 END), 0) as carwash_ingreso,
+        COALESCE(SUM(CASE WHEN s.tipo = 'mecanica' THEN 1 ELSE 0 END), 0)::int as mecanica_count,
+        COALESCE(SUM(CASE WHEN s.tipo = 'mecanica' THEN s.precio ELSE 0 END), 0) as mecanica_ingreso
+       FROM services s
+       WHERE s.business_id = $1${pf.where}`,
+      [business_id, ...pf.params]
+    );
+
+    const byTipo = await queryAll(
+      `SELECT s.tipo, COUNT(*)::int as total, COALESCE(SUM(s.precio), 0) as ingreso
+       FROM services s
+       WHERE s.business_id = $1${pf.where}
+       GROUP BY s.tipo`,
+      [business_id, ...pf.params]
+    );
+
+    // Daily trend (grouped by date)
+    // ::TEXT keeps the value as 'YYYY-MM-DD' string in BOTH engines
+    // (PG DATE → 'YYYY-MM-DD', SQLite date() → 'YYYY-MM-DD')
+    const dailyTrend = await queryAll(
+      `SELECT s.created_at::DATE::TEXT as fecha,
+         COUNT(*)::int as total,
+         COALESCE(SUM(s.precio), 0) as ingreso
+       FROM services s
+       WHERE s.business_id = $1${pf.where}
+       GROUP BY s.created_at::DATE::TEXT
+       ORDER BY fecha ASC`,
+      [business_id, ...pf.params]
+    );
+
+    const topServices = await queryAll(
+      `SELECT s.nombre, s.tipo, COUNT(*)::int as total, COALESCE(SUM(s.precio), 0) as ingreso
+       FROM services s
+       WHERE s.business_id = $1${pf.where}
+       GROUP BY s.nombre, s.tipo
+       ORDER BY total DESC, ingreso DESC
+       LIMIT 10`,
+      [business_id, ...pf.params]
+    );
+
+    res.json({
+      totals: totals[0] || {
+        total_servicios: 0, ingreso_total: 0, carwash_count: 0, carwash_ingreso: 0,
+        mecanica_count: 0, mecanica_ingreso: 0,
+      },
+      byTipo,
+      dailyTrend,
+      topServices,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

@@ -3,21 +3,21 @@ import { api } from '../api/client';
 import { useBusinessConfig } from '../context/BusinessConfig';
 import { useToast } from '../components/Toast';
 import Skeleton from '../components/Skeleton';
-import { Plus, Edit, Trash, Tags, X } from '../components/Icons';
+import { Plus, Edit, Trash, Tags, Search, X } from '../components/Icons';
+import ConfirmDialog from '../components/ConfirmDialog';
+import CategoryFormModal from '../components/categories/CategoryFormModal';
 
 export default function Categories() {
   const { t } = useBusinessConfig();
   const toast = useToast();
   const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ nombre: '', descripcion: '' });
-  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
+  useEffect(() => { loadCategories(); }, []);
 
   const loadCategories = async () => {
     try {
@@ -30,21 +30,10 @@ export default function Categories() {
     }
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ nombre: '', descripcion: '' });
-    setShowModal(true);
-  };
+  const openCreate = () => { setEditing(null); setShowModal(true); };
+  const openEdit = (cat) => { setEditing(cat); setShowModal(true); };
 
-  const openEdit = (cat) => {
-    setEditing(cat);
-    setForm({ nombre: cat.nombre, descripcion: cat.descripcion || '' });
-    setShowModal(true);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+  const handleSave = async (form) => {
     try {
       if (editing) {
         await api.updateCategory(editing.id, form);
@@ -57,60 +46,55 @@ export default function Categories() {
       loadCategories();
     } catch (error) {
       toast.error(error.message);
-    } finally {
-      setSaving(false);
     }
   };
 
-  const handleDelete = async (cat) => {
-    if (!confirm(`¿Eliminar ${t('category').toLowerCase()} "${cat.nombre}"?`)) return;
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
     try {
-      await api.deleteCategory(cat.id);
+      await api.deleteCategory(confirmDelete.id);
       toast.success('Categoría eliminada correctamente');
+      setConfirmDelete(null);
       loadCategories();
     } catch (error) {
       toast.error(error.message);
     }
   };
 
+  const filtered = categories.filter((cat) =>
+    !search || cat.nombre.toLowerCase().includes(search.toLowerCase())
+      || (cat.descripcion || '').toLowerCase().includes(search.toLowerCase())
+  );
+
   if (loading) {
-    return (
-      <div className="page-container">
-        <Skeleton.CardGrid count={6} />
-      </div>
-    );
+    return <div className="page-container"><Skeleton.CardGrid count={6} /></div>;
   }
 
   return (
     <div className="page-container">
       <div className="toolbar">
-        <div className="toolbar-info">
-          <span className="toolbar-count">{categories.length} {t('category_plural').toLowerCase()}</span>
+        <div className="toolbar-info"><span>{filtered.length} {t('category_plural').toLowerCase()}</span></div>
+        <div className="toolbar-filters">
+          <div className="search-box">
+            <Search size={18} />
+            <input type="text" placeholder="Buscar categorías..."
+              value={search} onChange={(e) => setSearch(e.target.value)} />
+            {search && <button className="clear-btn" onClick={() => setSearch('')}><X size={16} /></button>}
+          </div>
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={18} /> Nueva {t('category')}
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={18} />
-          <span>Nueva {t('category')}</span>
-        </button>
       </div>
 
       <div className="categories-grid">
-        {categories.map((cat) => (
+        {filtered.map((cat) => (
           <div key={cat.id} className="category-card">
             <div className="category-card-header">
-              <div className="category-icon">
-                <Tags size={20} />
-              </div>
+              <div className="category-icon"><Tags size={20} /></div>
               <div className="category-actions">
-                <button className="btn-icon" onClick={() => openEdit(cat)} title="Editar">
-                  <Edit size={14} />
-                </button>
-                <button
-                  className="btn-icon danger"
-                  onClick={() => handleDelete(cat)}
-                  title="Eliminar"
-                >
-                  <Trash size={14} />
-                </button>
+                <button className="btn-icon" onClick={() => openEdit(cat)} title="Editar"><Edit size={14} /></button>
+                <button className="btn-icon danger" onClick={() => setConfirmDelete(cat)} title="Eliminar"><Trash size={14} /></button>
               </div>
             </div>
             <h3 className="category-name">{cat.nombre}</h3>
@@ -120,68 +104,43 @@ export default function Categories() {
             </div>
           </div>
         ))}
-
-        {categories.length === 0 && (
+        {filtered.length === 0 && (
           <div className="empty-state full-width">
             <Tags size={48} />
-            <h3>No hay {t('category_plural').toLowerCase()}</h3>
-            <p>Crea tu primer {t('category').toLowerCase()}</p>
-            <button className="btn btn-primary" onClick={openCreate}>
-              <Plus size={16} /> Crear {t('category')}
-            </button>
+            {categories.length > 0 ? (
+              <>
+                <h3>Sin resultados para tu búsqueda</h3>
+                <p>Prueba con otro término o limpia la búsqueda</p>
+                <button className="btn btn-secondary" onClick={() => setSearch('')}>
+                  <X size={16} /> Limpiar búsqueda
+                </button>
+              </>
+            ) : (
+              <>
+                <h3>No hay {t('category_plural').toLowerCase()}</h3>
+                <p>Crea tu primer {t('category').toLowerCase()}</p>
+                <button className="btn btn-primary" onClick={openCreate}>
+                  <Plus size={16} /> Crear {t('category')}
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal modal-sm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editing ? `Editar ${t('category')}` : `Nueva ${t('category')}`}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Nombre *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.nombre}
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    placeholder={`Nombre de ${t('category').toLowerCase()}`}
-                    autoFocus
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <textarea
-                    value={form.descripcion}
-                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                    placeholder={`Descripción de ${t('category').toLowerCase()}`}
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? 'Guardando...' : editing ? 'Actualizar' : 'Crear'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CategoryFormModal editing={editing} onSave={handleSave}
+          onClose={() => setShowModal(false)} t={t} />
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Eliminar Categoría"
+        message={`¿Estás seguro de eliminar la categoría "${confirmDelete?.nombre}"?`}
+        confirmText="Eliminar"
+        onConfirm={handleDelete}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }
