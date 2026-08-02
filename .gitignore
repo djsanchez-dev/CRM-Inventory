@@ -1,5 +1,10 @@
 node_modules/
 *.db
+*.db-shm
+*.db-wal
 .env
+.env.local
+.env.production
 dist/
+backend/logs/
 .DS_Store

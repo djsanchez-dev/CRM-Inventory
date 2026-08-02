@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { queryOne, transaction } = require('../database');
-const { resolveConfig, getPreset } = require('../config/businessTypes');
+const { resolveConfig, getPreset, getDefaultCategories } = require('../config/businessTypes');
 const { logger } = require('../middleware/logger');
 
 const router = express.Router();
@@ -68,6 +68,16 @@ router.post('/setup', async (req, res) => {
         'INSERT INTO users (business_id, username, password, nombre, rol) VALUES ($1, $2, $3, $4, $5)',
         [businessId, adminUsername, hashedPassword, adminName, 'admin']
       );
+
+      // Seed default categories for the business type (e.g. licorería: bebidas,
+      // snacks, cigarros...) so the catalog starts ready to use.
+      const defaultCategories = getDefaultCategories(tipo);
+      for (const cat of defaultCategories) {
+        await client.query(
+          'INSERT INTO categories (business_id, nombre, descripcion) VALUES ($1, $2, $3)',
+          [businessId, cat.nombre, cat.descripcion || null]
+        );
+      }
 
       return businessId;
     });

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../api/client';
+import { useAuth } from './AuthContext';
 
 const BusinessConfigContext = createContext(null);
 
@@ -7,6 +8,7 @@ export function BusinessConfigProvider({ children }) {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   const loadConfig = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -32,9 +34,12 @@ export function BusinessConfigProvider({ children }) {
     }
   }, []);
 
+  // Reload config whenever the authenticated user changes (login/logout/setup),
+  // so labels (t()) are correct right after auth transitions — not only on mount.
   useEffect(() => {
+    setLoading(true);
     loadConfig();
-  }, [loadConfig]);
+  }, [loadConfig, user?.id, user?.business_id]);
 
   // Reload config when auth state changes (called from AuthContext)
   const refreshConfig = useCallback(() => {

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { search, startDate, endDate, customer_id, tipo_pago, page = '1', limit = '100' } = req.query;
+    const { search, startDate, endDate, customer_id, tipo_pago, delivery, estado_delivery, page = '1', limit = '100' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(500, Math.max(1, parseInt(limit) || 100));
@@ -17,10 +17,22 @@ router.get('/', async (req, res) => {
     const params = [business_id];
     let paramIdx = 2;
 
+    if (delivery === 'true' || delivery === '1') {
+      whereClause += ' AND s.es_delivery = TRUE';
+    } else if (delivery === 'false' || delivery === '0') {
+      whereClause += ' AND s.es_delivery = FALSE';
+    }
+
+    if (estado_delivery) {
+      whereClause += ` AND s.estado_delivery = $${paramIdx}`;
+      params.push(estado_delivery);
+      paramIdx++;
+    }
+
     if (search) {
-      whereClause += ` AND (s.id::TEXT ILIKE $${paramIdx} OR c.nombre ILIKE $${paramIdx + 1})`;
-      params.push(`%${search}%`, `%${search}%`);
-      paramIdx += 2;
+      whereClause += ` AND (s.id::TEXT ILIKE $${paramIdx} OR c.nombre ILIKE $${paramIdx + 1} OR s.direccion_entrega ILIKE $${paramIdx + 2})`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      paramIdx += 3;
     }
 
     if (startDate) {
@@ -114,7 +126,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { customer_id, items, tipo_pago, descuento, puntos_usados } = req.body;
+    const { customer_id, items, tipo_pago, descuento, puntos_usados, es_delivery, direccion_entrega, repartidor } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ error: 'La venta debe tener al menos un producto' });
@@ -169,12 +181,23 @@ router.post('/', async (req, res) => {
     const totalBruto = saleItems.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
     const puntosGanados = customer_id ? Math.floor(totalBruto / 100) : 0;
 
+    // Validate delivery fields (only when the sale is a delivery order)
+    const isDelivery = !!es_delivery;
+    if (isDelivery) {
+      if (typeof direccion_entrega !== 'string' || !direccion_entrega.trim()) {
+        return res.status(400).json({ error: 'La dirección de entrega es obligatoria para pedidos de delivery' });
+      }
+    }
+
     // Create sale in transaction
     const saleId = await transaction(async (client) => {
       const result = await client.query(
-        `INSERT INTO sales (business_id, customer_id, total, tipo_pago, puntos_ganados, puntos_usados)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [business_id, customer_id || null, total, tipo_pago || 'efectivo', puntosGanados, puntosUsados]
+        `INSERT INTO sales (business_id, customer_id, total, tipo_pago, puntos_ganados, puntos_usados,
+           es_delivery, direccion_entrega, repartidor, estado_delivery)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+        [business_id, customer_id || null, total, tipo_pago || 'efectivo', puntosGanados, puntosUsados,
+         isDelivery, isDelivery ? (direccion_entrega || null) : null,
+         isDelivery ? (repartidor || null) : null, isDelivery ? 'pendiente' : null]
       );
       const newSaleId = result.rows[0].id;
 
@@ -227,6 +250,43 @@ router.post('/', async (req, res) => {
     );
 
     res.status(201).json({ ...sale, items: items_result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/sales/:id/delivery — update delivery status (pendiente → en_camino → entregado)
+router.put('/:id/delivery', async (req, res) => {
+  try {
+    const business_id = req.user.business_id;
+    const { estado_delivery, repartidor } = req.body;
+    const validStates = ['pendiente', 'en_camino', 'entregado', 'cancelado'];
+
+    if (estado_delivery && !validStates.includes(estado_delivery)) {
+      return res.status(400).json({ error: 'Estado de delivery inválido' });
+    }
+
+    const sale = await queryOne(
+      'SELECT id, es_delivery FROM sales WHERE id = $1 AND business_id = $2',
+      [req.params.id, business_id]
+    );
+    if (!sale) {
+      return res.status(404).json({ error: 'Venta no encontrada' });
+    }
+    if (!sale.es_delivery) {
+      return res.status(400).json({ error: 'Esta venta no es un pedido de delivery' });
+    }
+
+    const updated = await queryOne(
+      `UPDATE sales SET
+         estado_delivery = COALESCE($1, estado_delivery),
+         repartidor = COALESCE($2, repartidor),
+         updated_at = NOW()
+       WHERE id = $3 AND business_id = $4 RETURNING *`,
+      [estado_delivery || null, repartidor || null, req.params.id, business_id]
+    );
+
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

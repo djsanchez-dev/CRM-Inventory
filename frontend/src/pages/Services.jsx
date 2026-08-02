@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import {
   Plus, Search, X, Trash, FileDown, FileText,
   Car, Wrench, Droplets, CalendarDays, Trending,
+  Bike, Tractor, BusFront, Van,
 } from '../components/Icons';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useBusinessConfig } from '../context/BusinessConfig';
@@ -18,13 +19,25 @@ const TYPE_LABELS = {
   mecanica: { label: 'Mecánica', icon: Wrench, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
 };
 
+// Vehicle type metadata (fallback if business config has no vehicleTypes)
+const DEFAULT_VEHICLES = [
+  { id: 'moto', label: 'Moto', icon: Bike, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' },
+  { id: 'mototaxi', label: 'Mototaxi', icon: Bike, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
+  { id: 'auto', label: 'Auto', icon: Car, color: '#6366f1', bg: 'rgba(99, 102, 241, 0.12)' },
+  { id: 'cuatrimoto', label: 'Cuatrimoto', icon: Van, color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' },
+  { id: 'combi', label: 'Combi', icon: BusFront, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
+  { id: 'tractor', label: 'Tractor', icon: Tractor, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.12)' },
+  { id: 'otro', label: 'Otro', icon: Wrench, color: '#64748b', bg: 'rgba(100, 116, 139, 0.12)' },
+];
+
 export default function Services() {
-  const { tipo, loading: configLoading } = useBusinessConfig();
+  const { tipo, vehicleTypes = [], loading: configLoading } = useBusinessConfig();
   const toast = useToast();
   const [services, setServices] = useState([]);
-  const [summary, setSummary] = useState({ carwash: { total: 0, ingreso: 0 }, mecanica: { total: 0, ingreso: 0 }, total_servicios: 0, ingreso_total: 0 });
+  const [summary, setSummary] = useState({ carwash: { total: 0, ingreso: 0 }, mecanica: { total: 0, ingreso: 0 }, total_servicios: 0, ingreso_total: 0, porVehiculo: [] });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [tipoFilter, setTipoFilter] = useState('');
+  const [vehiculoFilter, setVehiculoFilter] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
@@ -33,12 +46,22 @@ export default function Services() {
   const [customers, setCustomers] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const buildParams = () => {
+  const vehicles = vehicleTypes.length > 0
+    ? vehicleTypes.map((v) => {
+        const meta = DEFAULT_VEHICLES.find((d) => d.id === v.id) || {};
+        return { ...v, icon: meta.icon || Car, color: meta.color || '#64748b', bg: meta.bg || 'rgba(100, 116, 139, 0.12)' };
+      })
+    : DEFAULT_VEHICLES;
+
+  const vehicleMeta = (id) => vehicles.find((v) => v.id === id);
+
+  const buildParams = (pg) => {
     const params = new URLSearchParams();
     if (selectedDate) params.set('date', selectedDate);
     if (tipoFilter) params.set('tipo', tipoFilter);
+    if (vehiculoFilter) params.set('vehiculo', vehiculoFilter);
     if (search) params.set('search', search);
-    params.set('page', page.toString());
+    params.set('page', (pg || page).toString());
     return params.toString() ? `?${params.toString()}` : '';
   };
 
@@ -51,10 +74,10 @@ export default function Services() {
     }
   };
 
-  const loadServices = async () => {
+  const loadServices = async (pageOverride) => {
     setLoading(true);
     try {
-      const result = await api.getServices(buildParams());
+      const result = await api.getServices(buildParams(pageOverride));
       setServices(result.data || []);
       setPagination(result.pagination);
     } catch (error) {
@@ -66,19 +89,19 @@ export default function Services() {
 
   useEffect(() => {
     setPage(1);
-  }, [selectedDate, tipoFilter]);
+  }, [selectedDate, tipoFilter, vehiculoFilter]);
 
   // Debounce search to avoid hammering the API per keystroke
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(loadServices, 300);
+    const timeout = setTimeout(() => loadServices(1), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
   useEffect(() => {
     loadServices();
     loadSummary();
-  }, [selectedDate, tipoFilter, page]);
+  }, [selectedDate, tipoFilter, vehiculoFilter, page]);
 
   const shiftDay = (delta) => {
     const d = new Date(selectedDate + 'T12:00:00');
@@ -148,6 +171,9 @@ export default function Services() {
   if (tipo !== 'carwash') {
     return <Navigate to="/app" replace />;
   }
+
+  // Vehicles washed today (only carwash services with a vehicle type)
+  const vehicleStats = summary.porVehiculo || [];
 
   if (loading && services.length === 0) {
     return (
@@ -232,6 +258,44 @@ export default function Services() {
         </div>
       </div>
 
+      {/* Vehicles washed today — breakdown by vehicle type */}
+      {vehicleStats.length > 0 && (
+        <div className="vehicle-stats-panel">
+          <div className="vehicle-stats-header">
+            <Car size={16} />
+            <span>Vehículos lavados hoy</span>
+            <span className="vehicle-stats-total">
+              {vehicleStats.reduce((s, v) => s + v.total, 0)} unidad(es)
+            </span>
+          </div>
+          <div className="vehicle-stats-grid">
+            {vehicles
+              .filter((v) => vehicleStats.some((s) => s.tipo_vehiculo === v.id))
+              .map((v) => {
+                const stat = vehicleStats.find((s) => s.tipo_vehiculo === v.id);
+                const VIcon = v.icon || Car;
+                return (
+                  <div
+                    key={v.id}
+                    className="vehicle-stat-chip"
+                    style={{ borderColor: v.color, background: v.bg }}
+                    onClick={() => setVehiculoFilter(vehiculoFilter === v.id ? '' : v.id)}
+                    title="Click para filtrar"
+                  >
+                    <VIcon size={16} style={{ color: v.color }} />
+                    <div className="vehicle-stat-info">
+                      <span className="vehicle-stat-label">{v.label}</span>
+                      <span className="vehicle-stat-value" style={{ color: v.color }}>
+                        {stat.total} <small>· {formatCurrency(stat.ingreso)}</small>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="toolbar" style={{ marginTop: 20 }}>
         <div className="search-box">
@@ -260,6 +324,20 @@ export default function Services() {
             <button className={`service-filter-btn ${tipoFilter === 'mecanica' ? 'active' : ''}`} onClick={() => setTipoFilter('mecanica')}>
               <Wrench size={14} /> Mecánica
             </button>
+          </div>
+
+          <div className="service-type-filter vehicle-filter">
+            <select
+              className="vehicle-filter-select"
+              value={vehiculoFilter}
+              onChange={(e) => setVehiculoFilter(e.target.value)}
+              aria-label="Filtrar por tipo de vehículo"
+            >
+              <option value="">Todos los vehículos</option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>{v.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className="export-buttons">
@@ -294,6 +372,7 @@ export default function Services() {
               <th>Hora</th>
               <th>Tipo</th>
               <th>Servicio</th>
+              <th>Vehículo</th>
               <th>Placa</th>
               <th>Cliente</th>
               <th>Precio</th>
@@ -323,6 +402,18 @@ export default function Services() {
                       <span className="product-name">{svc.nombre}</span>
                     </div>
                   </td>
+                  <td>
+                    {svc.tipo_vehiculo ? (() => {
+                      const vMeta = vehicleMeta(svc.tipo_vehiculo);
+                      const VIcon = vMeta?.icon || Car;
+                      return (
+                        <span className="badge" style={{ background: vMeta?.bg, color: vMeta?.color }}>
+                          <VIcon size={12} style={{ marginRight: 4 }} />
+                          {vMeta?.label || svc.tipo_vehiculo}
+                        </span>
+                      );
+                    })() : <span className="text-muted">—</span>}
+                  </td>
                   <td>{svc.placa ? <code>{svc.placa}</code> : <span className="text-muted">—</span>}</td>
                   <td>{svc.customer_name || <span className="text-muted">—</span>}</td>
                   <td className="currency">{formatCurrency(svc.precio)}</td>
@@ -343,7 +434,7 @@ export default function Services() {
             })}
             {services.length === 0 && (
               <tr>
-                <td colSpan={9} className="empty-cell">
+                <td colSpan={10} className="empty-cell">
                   <div className="empty-state">
                     <Droplets size={48} />
                     <h3>No hay servicios para este día</h3>

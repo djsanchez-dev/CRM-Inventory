@@ -37,7 +37,7 @@ export default function BusinessSetup() {
   const [loaded, setLoaded] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
   const [direction, setDirection] = useState('forward');
-  const { login } = useAuth();
+  const { hydrateSession } = useAuth();
   const navigate = useNavigate();
   const formRef = useRef(null);
 
@@ -71,9 +71,8 @@ export default function BusinessSetup() {
         businessName, businessType, moneda: currency,
         adminUsername, adminPassword, adminName,
       });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      localStorage.setItem('business', JSON.stringify(data.business));
+      // Hydrate the auth context so /app is accessible immediately
+      hydrateSession(data);
       navigate('/app');
     } catch (err) {
       setError(err.message);

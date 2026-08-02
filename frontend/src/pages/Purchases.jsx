@@ -28,20 +28,20 @@ export default function Purchases() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const buildParams = () => {
+  const buildParams = (pg) => {
     const params = new URLSearchParams();
     if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
     if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
     if (supplierFilter) params.set('supplier_id', supplierFilter.id);
     if (search) params.set('search', search);
-    params.set('page', page.toString());
+    params.set('page', (pg || page).toString());
     return params.toString() ? `?${params.toString()}` : '';
   };
 
-  const loadPurchases = async () => {
+  const loadPurchases = async (pageOverride) => {
     setLoading(true);
     try {
-      const result = await api.getPurchases(buildParams());
+      const result = await api.getPurchases(buildParams(pageOverride));
       setPurchases(result.data || []);
       setPagination(result.pagination);
       setTotals(result.totals || { cantidad: 0, total: 0, proveedores: 0 });
@@ -67,7 +67,7 @@ export default function Purchases() {
 
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(loadPurchases, 300);
+    const timeout = setTimeout(() => loadPurchases(1), 300);
     return () => clearTimeout(timeout);
   }, [dateFilter, supplierFilter, search]);
 

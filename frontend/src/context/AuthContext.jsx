@@ -104,6 +104,22 @@ export function AuthProvider({ children }) {
     setUser(newUser);
   }, []);
 
+  /**
+   * Hydrate session from a login/setup response without an extra API call.
+   * Used by BusinessSetup after creating a business.
+   */
+  const hydrateSession = useCallback(({ token, user: newUser, business: newBusiness }) => {
+    if (token) localStorage.setItem('token', token);
+    if (newUser) {
+      localStorage.setItem('user', JSON.stringify(newUser));
+      setUser(newUser);
+    }
+    if (newBusiness) {
+      localStorage.setItem('business', JSON.stringify(newBusiness));
+      setBusiness(newBusiness);
+    }
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -112,6 +128,7 @@ export function AuthProvider({ children }) {
       login,
       logout,
       updateUser,
+      hydrateSession,
       isAdmin: user?.rol === 'admin',
       isSuperAdmin: user?.rol === 'super_admin',
     }}>

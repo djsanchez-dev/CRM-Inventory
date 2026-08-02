@@ -42,7 +42,8 @@ let _sqliteDb = null;
 function getSQLite() {
   if (_sqliteDb) return _sqliteDb;
   const Database = require('better-sqlite3');
-  const dbPath = path.join(__dirname, '..', 'inventario.db');
+  // Allow tests/tools to point to an isolated DB (e.g. a temp file)
+  const dbPath = process.env.SQLITE_DB_PATH || path.join(__dirname, '..', 'inventario.db');
   _sqliteDb = new Database(dbPath);
   _sqliteDb.pragma('journal_mode = WAL');
   _sqliteDb.pragma('foreign_keys = ON');
@@ -158,7 +159,14 @@ function convertPgToSQLite(sql, params) {
   converted = converted.replace(/\bILIKE\b/gi, 'LIKE');
   // Replace TIMESTAMPTZ with TEXT in column type contexts
   converted = converted.replace(/\bTIMESTAMPTZ\b/gi, 'TEXT');
-  return { sql: converted, params: matchedParam ? expanded : params };
+
+  // better-sqlite3 only binds numbers, strings, bigints, buffers and null —
+  // convert JS booleans to 1/0 so routes can pass es_delivery & friends.
+  const rawParams = matchedParam ? expanded : params;
+  const normalized = (Array.isArray(rawParams) ? rawParams : []).map((v) =>
+    typeof v === 'boolean' ? (v ? 1 : 0) : v
+  );
+  return { sql: converted, params: normalized };
 }
 
 /**
@@ -178,18 +186,18 @@ async function query(text, params = []) {
   }
   
   const stmt = client.prepare(sql);
-  
-  // SELECT / WITH / RETURNING queries return rows
-  if (sql.trim().toUpperCase().startsWith('SELECT') || 
-      sql.trim().toUpperCase().startsWith('WITH') ||
-      /\bRETURNING\b/i.test(sql)) {
+
+  // better-sqlite3's Statement.reader is true for statements that return data
+  // (SELECT, WITH ... SELECT, and INSERT/UPDATE/DELETE with RETURNING) and
+  // false for plain writes — so no fragile keyword heuristics are needed.
+  if (stmt.reader) {
     const rows = stmt.all(...p);
     return { rows };
   }
   
-  // INSERT / UPDATE / DELETE
+  // INSERT / UPDATE / DELETE (without RETURNING)
   const info = stmt.run(...p);
-  return { rows: [], changes: info.changes, lastInsertRowid: info.lastInsertRowid };
+  return { rows: [], rowCount: info.changes, changes: info.changes, lastInsertRowid: info.lastInsertRowid };
 }
 
 /**
@@ -240,11 +248,11 @@ async function transaction(callback) {
     query: async (sql, p) => {
       const { sql: sql2, params: p2 } = convertPgToSQLite(sql, p || []);
       const stmt = client.prepare(sql2);
-      if (/\bSELECT\b/i.test(sql2) || /\bRETURNING\b/i.test(sql2) || /\bWITH\b/i.test(sql2)) {
+      if (stmt.reader) {
         return { rows: stmt.all(...p2) };
       }
-      stmt.run(...p2);
-      return { rows: [] };
+      const info = stmt.run(...p2);
+      return { rows: [], rowCount: info.changes, changes: info.changes, lastInsertRowid: info.lastInsertRowid };
     },
     queryOne: async (sql, p) => {
       const { sql: sql2, params: p2 } = convertPgToSQLite(sql, p || []);
@@ -258,7 +266,7 @@ async function transaction(callback) {
     client.exec('COMMIT');
     return result;
   } catch (error) {
-    client.exec('ROLLBACK');
+    try { client.exec('ROLLBACK'); } catch (e) { /* ignore rollback errors */ }
     logger.error('SQLite transaction rolled back', { error: error.message });
     throw error;
   }
@@ -290,6 +298,7 @@ async function initSchema() {
           nombre TEXT NOT NULL,
           rol TEXT DEFAULT 'user',
           created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW(),
           UNIQUE(business_id, username)
         );
         CREATE TABLE IF NOT EXISTS categories (
@@ -350,7 +359,12 @@ async function initSchema() {
           estado TEXT DEFAULT 'completada',
           puntos_ganados INTEGER DEFAULT 0,
           puntos_usados INTEGER DEFAULT 0,
-          created_at TIMESTAMPTZ DEFAULT NOW()
+          es_delivery BOOLEAN DEFAULT FALSE,
+          direccion_entrega TEXT,
+          repartidor TEXT,
+          estado_delivery TEXT DEFAULT 'pendiente',
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
         );
         CREATE TABLE IF NOT EXISTS sale_items (
           id SERIAL PRIMARY KEY,
@@ -375,6 +389,7 @@ async function initSchema() {
           business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
           tipo TEXT NOT NULL DEFAULT 'carwash',
           nombre TEXT NOT NULL,
+          tipo_vehiculo TEXT,
           placa TEXT,
           cliente_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
           precio NUMERIC(12, 2) NOT NULL DEFAULT 0,
@@ -411,6 +426,17 @@ async function initSchema() {
       `);
       // Allow NULL business_id for super_admin users
       await client.query('ALTER TABLE users ALTER COLUMN business_id DROP NOT NULL').catch(() => {});
+      // Migration: add updated_at to users for DBs created before it existed
+      await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()').catch(() => {});
+      // Migration: add tipo_vehiculo to services for DBs created before it existed
+      await client.query('ALTER TABLE services ADD COLUMN IF NOT EXISTS tipo_vehiculo TEXT').catch(() => {});
+      // Migration: delivery columns on sales for DBs created before it existed
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS es_delivery BOOLEAN DEFAULT FALSE').catch(() => {});
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS direccion_entrega TEXT').catch(() => {});
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS repartidor TEXT').catch(() => {});
+      await client.query("ALTER TABLE sales ADD COLUMN IF NOT EXISTS estado_delivery TEXT DEFAULT 'pendiente'").catch(() => {});
+      // Migration: updated_at on sales for DBs created before it existed
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()').catch(() => {});
     } else {
       // ——— SQLite schema ———
       client.exec(`
@@ -430,6 +456,7 @@ async function initSchema() {
           nombre TEXT NOT NULL,
           rol TEXT DEFAULT 'user',
           created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now')),
           UNIQUE(business_id, username)
         );
         CREATE TABLE IF NOT EXISTS categories (
@@ -490,7 +517,12 @@ async function initSchema() {
           estado TEXT DEFAULT 'completada',
           puntos_ganados INTEGER DEFAULT 0,
           puntos_usados INTEGER DEFAULT 0,
-          created_at TEXT DEFAULT (datetime('now'))
+          es_delivery INTEGER DEFAULT 0,
+          direccion_entrega TEXT,
+          repartidor TEXT,
+          estado_delivery TEXT DEFAULT 'pendiente',
+          created_at TEXT DEFAULT (datetime('now')),
+          updated_at TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS sale_items (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -515,6 +547,7 @@ async function initSchema() {
           business_id INTEGER NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
           tipo TEXT NOT NULL DEFAULT 'carwash',
           nombre TEXT NOT NULL,
+          tipo_vehiculo TEXT,
           placa TEXT,
           cliente_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
           precio REAL NOT NULL DEFAULT 0,
@@ -548,6 +581,55 @@ async function initSchema() {
       // Allow NULL business_id for super_admin users (SQLite)
       // better-sqlite3 can't ALTER COLUMN DROP NOT NULL, but CREATE TABLE IF NOT EXISTS
       // won't recreate if table exists. Migration handled via manual step if needed.
+
+      // Migration: add updated_at to users for DBs created before it existed
+      // NOTE: SQLite forbids ADD COLUMN with a parenthesized-expression default
+      // (e.g. DEFAULT (datetime('now'))), so add without DEFAULT — the column
+      // only gets written on UPDATE and can be NULL initially.
+      try {
+        client.exec('ALTER TABLE users ADD COLUMN updated_at TEXT');
+        logger.info('Migration: added users.updated_at (SQLite)');
+      } catch (e) {
+        if (!/duplicate column/i.test(e.message)) {
+          logger.warn('Migration users.updated_at (SQLite) skipped: ' + e.message);
+        }
+      }
+
+      // Migration: add tipo_vehiculo to services for DBs created before it existed
+      try {
+        client.exec('ALTER TABLE services ADD COLUMN tipo_vehiculo TEXT');
+        logger.info('Migration: added services.tipo_vehiculo (SQLite)');
+      } catch (e) {
+        // Column already exists
+      }
+
+      // Migration: delivery columns on sales for DBs created before it existed
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN es_delivery INTEGER DEFAULT 0');
+        logger.info('Migration: added sales.es_delivery (SQLite)');
+      } catch (e) { /* Column already exists */ }
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN direccion_entrega TEXT');
+      } catch (e) { /* Column already exists */ }
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN repartidor TEXT');
+      } catch (e) { /* Column already exists */ }
+      try {
+        client.exec("ALTER TABLE sales ADD COLUMN estado_delivery TEXT DEFAULT 'pendiente'");
+        logger.info('Migration: added sales.estado_delivery (SQLite)');
+      } catch (e) { /* Column already exists */ }
+      // Migration: updated_at on sales for DBs created before it existed
+      // NOTE: SQLite forbids ADD COLUMN with a parenthesized-expression default
+      // (e.g. DEFAULT (datetime('now'))), so add without DEFAULT — the column
+      // only gets written on UPDATE and can be NULL initially.
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN updated_at TEXT');
+        logger.info('Migration: added sales.updated_at (SQLite)');
+      } catch (e) {
+        if (!/duplicate column/i.test(e.message)) {
+          logger.warn('Migration sales.updated_at (SQLite) skipped: ' + e.message);
+        }
+      }
     }
     logger.info(`Schema initialized (${isPG ? 'PostgreSQL' : 'SQLite'})`);
   } catch (error) {

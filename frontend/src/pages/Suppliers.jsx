@@ -25,25 +25,25 @@ export default function Suppliers() {
   const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '' });
   const navigate = useNavigate();
 
-  const buildParams = () => {
+  const buildParams = (pg) => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
     if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
-    params.set('page', page.toString());
+    params.set('page', (pg || page).toString());
     return params.toString() ? `?${params.toString()}` : '';
   };
 
   useEffect(() => { loadSuppliers(); }, [dateFilter, page]);
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(loadSuppliers, 300);
+    const timeout = setTimeout(() => loadSuppliers(1), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
-  const loadSuppliers = async () => {
+  const loadSuppliers = async (pageOverride) => {
     try {
-      const result = await api.getSuppliers(buildParams());
+      const result = await api.getSuppliers(buildParams(pageOverride));
       setSuppliers(result.data || []);
       setPagination(result.pagination);
     } catch (error) {

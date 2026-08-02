@@ -1,5 +1,14 @@
 /* Test SQLite conversion of PostgreSQL-style queries used in routes */
-process.env.DATABASE_URL = ''; // force SQLite mode
+const os = require('os');
+const path = require('path');
+const fs = require('fs');
+
+// Force SQLite mode and point to an ISOLATED temp DB so the real
+// local inventario.db (user data) is never touched by tests.
+process.env.DATABASE_URL = '';
+const tmpDb = path.join(os.tmpdir(), `crm-sqlite-test-${Date.now()}.db`);
+process.env.SQLITE_DB_PATH = tmpDb;
+
 const db = require('./src/database');
 
 const overview = `SELECT
@@ -202,37 +211,64 @@ const suppliersList = `SELECT s.*,
   ORDER BY s.nombre ASC
   LIMIT $2 OFFSET $3`;
 
+// WITH ... SELECT — must route to all() and return rows
+const withSelect = `WITH recent AS (
+    SELECT id, total FROM sales WHERE business_id = $1
+  )
+  SELECT COUNT(*)::int as total FROM recent`;
+
+// WITH ... UPDATE (no RETURNING) — must route to run(), not all()
+const withUpdate = `WITH target AS (
+    SELECT id FROM sales WHERE business_id = $1 AND total = $2
+  )
+  UPDATE sales SET total = $3 WHERE id IN (SELECT id FROM target)`;
+
+// WITH ... SELECT that CONTAINS write keywords in a string literal/alias —
+// must still route to all() (regression guard for reader-based dispatch)
+const withSelectContainsWriteWords = `WITH t AS (
+    SELECT id, 'DELETE' as tipo, 'UPDATE' as accion FROM sales WHERE business_id = $1
+  )
+  SELECT COUNT(*)::int as total FROM t`;
+
 async function main() {
   await db.initSchema();
+
+  // Seed a business so FK constraints are satisfied (isolation: temp DB)
+  const biz = await db.queryOne(
+    "INSERT INTO businesses (nombre, tipo_negocio) VALUES ('Test', 'general') RETURNING id"
+  );
+  const bizId = biz ? biz.id : 1;
 
   // Insert a sale at midday to verify ::DATE boundary semantics (inclusive end date)
   await db.queryAll(
     `INSERT INTO sales (business_id, customer_id, total, tipo_pago, estado, created_at)
      VALUES (?, NULL, 100, 'efectivo', 'completada', '2026-07-15 12:30:00')`,
-    [1]
+    [bizId]
   );
 
   const tests = [
-    ['overview', overview, [1, 1, 1, 1, 1, 1, 1, 1]],
-    ['monthly', monthly, [1]],
-    ['topProducts', topProducts, [1]],
-    ['supplierReport', supplierReport, [1, 1, '2026-01-01', '2026-12-31']],
-    ['monthlyProfitability', monthlyProfitability, [1, 1, 1, 1]],
-    ['productProfitability', productProfitability, [1]],
-    ['searchQuery ILIKE', searchQuery, [1, 'x', 'x', 'x']],
+    ['overview', overview, [bizId, bizId, bizId, bizId, bizId, bizId, bizId, bizId]],
+    ['monthly', monthly, [bizId]],
+    ['topProducts', topProducts, [bizId]],
+    ['supplierReport', supplierReport, [bizId, bizId, '2026-01-01', '2026-12-31']],
+    ['monthlyProfitability', monthlyProfitability, [bizId, bizId, bizId, bizId]],
+    ['productProfitability', productProfitability, [bizId]],
+    ['searchQuery ILIKE', searchQuery, [bizId, 'x', 'x', 'x']],
     // End-date inclusive: sale on 2026-07-15 12:30 must be counted when end = '2026-07-15'
-    ['dateFilter inclusive end', dateFilter, [1, '2026-07-01', '2026-07-15']],
-    ['dateFilter excludes next day', dateFilter, [1, '2026-07-01', '2026-07-14']],
-    ['customersList repeated $1', customersList, [1, 100, 0]],
-    ['suppliersList repeated $1', suppliersList, [1, 100, 0]],
-    ['salesWithTipoPago', salesWithTipoPago, [1, 'efectivo', 50, 0]],
-    ['purchasesSearchPaged', purchasesSearchPaged, [1, 'x', 'x', 'x', 50, 0]],
-    ['purchasesTotals DISTINCT', purchasesTotals, [1, 'x', 'x', 'x']],
-    ['customersFiltered has_points', customersFiltered, [1, 100, 0]],
-    ['servicesList daily', servicesList, [1, '2026-07-15', 50, 0]],
-    ['servicesSummary by tipo', servicesSummary, [1, '2026-07-15']],
-    ['servicesReport CASE', servicesReport, [1, '2026-07-01', '2026-07-31']],
-    ['servicesDailyTrend ::DATE::TEXT', servicesDailyTrend, [1]],
+    ['dateFilter inclusive end', dateFilter, [bizId, '2026-07-01', '2026-07-15']],
+    ['dateFilter excludes next day', dateFilter, [bizId, '2026-07-01', '2026-07-14']],
+    ['customersList repeated $1', customersList, [bizId, 100, 0]],
+    ['suppliersList repeated $1', suppliersList, [bizId, 100, 0]],
+    ['salesWithTipoPago', salesWithTipoPago, [bizId, 'efectivo', 50, 0]],
+    ['purchasesSearchPaged', purchasesSearchPaged, [bizId, 'x', 'x', 'x', 50, 0]],
+    ['purchasesTotals DISTINCT', purchasesTotals, [bizId, 'x', 'x', 'x']],
+    ['customersFiltered has_points', customersFiltered, [bizId, 100, 0]],
+    ['servicesList daily', servicesList, [bizId, '2026-07-15', 50, 0]],
+    ['servicesSummary by tipo', servicesSummary, [bizId, '2026-07-15']],
+    ['servicesReport CASE', servicesReport, [bizId, '2026-07-01', '2026-07-31']],
+    ['servicesDailyTrend ::DATE::TEXT', servicesDailyTrend, [bizId]],
+    ['withSelect routes to all()', withSelect, [bizId]],
+    ['withSelect with write words still reads', withSelectContainsWriteWords, [bizId]],
   ];
 
   const assert = (name, actual, expected) => {
@@ -240,11 +276,20 @@ async function main() {
     console.log(`${ok ? '✓' : '✗'} ${name}: got ${actual}, expected ${expected}`);
     return ok;
   };
-  const dateRows = await db.queryAll(dateFilter, [1, '2026-07-01', '2026-07-15']);
+  const dateRows = await db.queryAll(dateFilter, [bizId, '2026-07-01', '2026-07-15']);
   const boundaryOk = assert('boundary inclusive', Number(dateRows[0].total), 1);
-  const dateRows2 = await db.queryAll(dateFilter, [1, '2026-07-01', '2026-07-14']);
+  const dateRows2 = await db.queryAll(dateFilter, [bizId, '2026-07-01', '2026-07-14']);
   const excludeOk = assert('boundary exclusive next day', Number(dateRows2[0].total), 0);
   if (!boundaryOk || !excludeOk) process.exitCode = 1;
+
+  // WITH ... UPDATE must run (change rows) and return no rows.
+  // Runs AFTER the boundary assertions (which need the seed sale untouched).
+  const withUpdateResult = await db.query(withUpdate, [bizId, 100, 101]);
+  const withUpdateOk = Array.isArray(withUpdateResult.rows) &&
+    withUpdateResult.rows.length === 0 &&
+    withUpdateResult.changes === 1;
+  console.log(`${withUpdateOk ? '✓' : '✗'} withUpdate routes to run(): changes=${withUpdateResult.changes}`);
+
   // cleanup
   await db.queryAll('DELETE FROM sales', []);
   let ok = 0;
@@ -258,7 +303,15 @@ async function main() {
     }
   }
   console.log(`\n${ok}/${tests.length} queries passed`);
-  process.exit(ok === tests.length ? 0 : 1);
+
+  // Cleanup temp DB files
+  for (const suffix of ['', '-shm', '-wal']) {
+    try { fs.unlinkSync(tmpDb + suffix); } catch { /* ignore */ }
+  }
+
+  // Include the standalone withUpdate assertion in the final exit code so a
+  // failure there can't be masked by the array-based pass count.
+  process.exit(ok === tests.length && withUpdateOk ? 0 : 1);
 }
 
 main().catch((e) => { console.error('FATAL:', e.message); process.exit(1); });

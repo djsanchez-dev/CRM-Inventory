@@ -2,7 +2,9 @@
 
 **Sistema profesional de gestión de inventario, ventas y clientes.**
 
-Plataforma integral para la administración de negocios comerciales. Desplegada en infraestructura cloud de clase mundial (**Vercel + Neon PostgreSQL**), con backend **Node.js/Express** serverless y frontend **React + Vite**.
+Plataforma integral para la administración de negocios comerciales. Desplegable en infraestructura cloud (**Vercel + Neon PostgreSQL**) o en local con **SQLite**, con backend **Node.js/Express** y frontend **React + Vite**.
+
+> La base de datos se detecta automáticamente: si `DATABASE_URL` está definida usa **PostgreSQL**; si no, usa **SQLite** local sin configuración adicional.
 
 > 🏢 Ideal para: Tiendas, bodegas, licorerías, ferreterías, tiendas de ropa, electrónicos y negocios de consumo masivo.
 
@@ -30,15 +32,17 @@ Plataforma integral para la administración de negocios comerciales. Desplegada 
 | 👤 **Usuarios** | Roles administrador/usuario con permisos diferenciados |
 
 ### Funcionalidades Clave
-- ✅ **Paginación** en productos, ventas, clientes y proveedores
+- ✅ **Paginación** en productos, ventas, clientes, compras, proveedores y servicios
 - ✅ **Programa de fidelidad** con puntos canjeables por descuentos
 - ✅ **Ventas exprés** sin necesidad de registrar cliente
 - ✅ **Registro rápido de clientes** durante la venta
+- ✅ **Módulo de Servicios (Car Wash / Mecánica)** exclusivo para negocios tipo carwash
+- ✅ **Panel de Super Admin** para gestionar todos los negocios y usuarios del sistema
 - ✅ **Notificaciones toast** para todas las operaciones CRUD
-- ✅ **Skeleton loading** y transiciones animadas (framer-motion)
+- ✅ **Skeleton loading** y transiciones animadas
 - ✅ **Exportación a CSV y PDF** con jspdf
 - ✅ **Búsqueda en tiempo real** con filtros combinados
-- ✅ **Protección CSRF** y rate limiting
+- ✅ **Helmet + rate limiting** en el backend
 - ✅ **Diseño responsive** optimizado para móvil y escritorio
 - ✅ **Code-splitting** con React.lazy() para carga rápida
 - ✅ **Compresión Brotli + Gzip** en build de producción
@@ -51,9 +55,9 @@ Plataforma integral para la administración de negocios comerciales. Desplegada 
 |------|-----------|---------|
 | **Frontend** | React + Vite | 18 / 5 |
 | **UI** | Lucide React + Recharts | - |
-| **Backend** | Express.js (serverless) | 4.21 |
-| **Base de Datos** | PostgreSQL (Neon) | 16 |
-| **ORM/Driver** | pg (node-postgres) | 8.13 |
+| **Backend** | Express.js (serverless-ready) | 4.21 |
+| **Base de Datos** | PostgreSQL (Neon) **o** SQLite local | 16 / 3.x |
+| **Drivers** | pg (node-postgres) + better-sqlite3 | 8.13 / 13.x |
 | **Auth** | JWT + bcryptjs | - |
 | **Hosting** | Vercel (Serverless Functions) | - |
 | **Seguridad** | Helmet + express-rate-limit | - |
@@ -69,13 +73,15 @@ Plataforma integral para la administración de negocios comerciales. Desplegada 
 ├── backend/
 │   ├── package.json
 │   └── src/
-│       ├── database.js         ★ PostgreSQL (pg Pool + helpers)
+│       ├── seed-admin.js       ★ Crea el super admin (`npm run seed`)
+│       ├── test-sqlite-convert.js ★ Pruebas de conversión SQLite (`npm test`)
+│       ├── database.js         ★ PostgreSQL + SQLite (auto-detect)
 │       ├── config/
 │       │   └── businessTypes.js  ★ Presets por tipo de negocio
 │       ├── middleware/
 │       │   └── auth.js          ★ Autenticación JWT
-│       └── routes/              ★ 11 rutas API
-│           ├── auth.js          ★ Login, verify, register
+│       └── routes/              ★ 12 rutas API
+│           ├── auth.js          ★ Login, verify, refresh
 │           ├── business.js      ★ Setup, config
 │           ├── products.js      ★ CRUD + paginación
 │           ├── categories.js    ★ CRUD
@@ -83,9 +89,11 @@ Plataforma integral para la administración de negocios comerciales. Desplegada 
 │           ├── suppliers.js     ★ CRUD + paginación
 │           ├── sales.js         ★ CRUD + paginación + transacciones
 │           ├── purchases.js     ★ CRUD + transacciones
+│           ├── services.js      ★ Servicios carwash/mecánica
 │           ├── dashboard.js     ★ KPIs y estadísticas
 │           ├── reports.js       ★ Reportes avanzados
-│           └── users.js         ★ CRUD + perfil
+│           ├── users.js         ★ CRUD + perfil
+│           └── admin.js         ★ Panel Super Admin
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
@@ -115,7 +123,7 @@ Plataforma integral para la administración de negocios comerciales. Desplegada 
 ### Prerrequisitos
 - Node.js v18+
 - npm v9+
-- Una base de datos PostgreSQL (recomendado: [Neon](https://console.neon.tech) — tier gratis)
+- (Opcional) Una base de datos PostgreSQL, ej. [Neon](https://console.neon.tech) — tier gratis. Sin ella, el sistema usa **SQLite** local automáticamente.
 
 ### 1. Clonar e instalar dependencias
 
@@ -128,11 +136,12 @@ cd frontend && npm install
 cd ..
 ```
 
-### 2. Configurar variables de entorno
+### 2. Configurar variables de entorno (opcional para desarrollo)
 
 ```bash
 cp .env.example .env
-# Editar .env con tu DATABASE_URL de Neon
+# Para usar PostgreSQL: define DATABASE_URL en .env
+# Para desarrollo local: deja DATABASE_URL vacío (usa SQLite)
 ```
 
 ### 3. Inicializar esquema de base de datos
@@ -141,7 +150,16 @@ cp .env.example .env
 npm run migrate
 ```
 
-### 4. Iniciar en desarrollo
+> El esquema también se inicializa automáticamente al arrancar el backend por primera vez, así que este paso es opcional.
+
+### 4. Crear el super administrador (opcional)
+
+```bash
+npm run seed
+# o con parámetros: npm run seed -- --username=admin --password=secreto123 --nombre="Super Admin"
+```
+
+### 5. Iniciar en desarrollo
 
 ```bash
 # Backend + Frontend simultáneamente (requiere concurrently)
@@ -152,18 +170,14 @@ npm run dev:backend    # http://localhost:3001
 npm run dev:frontend   # http://localhost:5173
 ```
 
-### 5. Abrir en el navegador
+### 6. Abrir en el navegador
 
 ```
 http://localhost:5173
 ```
 
 ### Credenciales por defecto
-Tras la configuración inicial del negocio, las credenciales se definen durante el setup.
-
-> **Para desarrollo:** Ejecuta `npm run migrate` para inicializar el schema, luego usa la interfaz de configuración inicial en `/business-setup`.
-
----
+Tras la configuración inicial del negocio, las credenciales se definen durante el setup (asistente en `/setup`).
 
 ## ☁️ Despliegue en Vercel
 
@@ -215,7 +229,7 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 |--------|------|:----:|-------------|
 | POST | `/api/auth/login` | - | Iniciar sesión |
 | GET | `/api/auth/verify` | - | Verificar token |
-| POST | `/api/auth/register` | Admin | Registrar usuario |
+| POST | `/api/auth/refresh` | JWT | Renovar token |
 
 ### Negocio
 | Método | Ruta | Auth | Descripción |
@@ -233,6 +247,32 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 | POST | `/api/products` | JWT | Crear |
 | PUT | `/api/products/:id` | JWT | Actualizar |
 | DELETE | `/api/products/:id` | JWT | Eliminar |
+
+### Categorías
+| Método | Ruta | Auth | Descripción |
+|--------|------|:----:|-------------|
+| GET | `/api/categories` | JWT | Listar |
+| GET | `/api/categories/:id` | JWT | Obtener |
+| POST | `/api/categories` | JWT | Crear |
+| PUT | `/api/categories/:id` | JWT | Actualizar |
+| DELETE | `/api/categories/:id` | JWT | Eliminar |
+
+### Proveedores (paginado)
+| Método | Ruta | Auth | Descripción |
+|--------|------|:----:|-------------|
+| GET | `/api/suppliers?page=&limit=&search=` | JWT | Listar |
+| GET | `/api/suppliers/:id` | JWT | Obtener |
+| POST | `/api/suppliers` | JWT | Crear |
+| PUT | `/api/suppliers/:id` | JWT | Actualizar |
+| DELETE | `/api/suppliers/:id` | JWT | Eliminar |
+
+### Servicios (Car Wash / Mecánica)
+| Método | Ruta | Auth | Descripción |
+|--------|------|:----:|-------------|
+| GET | `/api/services?date=&tipo=&search=` | JWT | Listar |
+| GET | `/api/services/summary?date=` | JWT | Resumen diario |
+| POST | `/api/services` | JWT | Registrar |
+| DELETE | `/api/services/:id` | JWT | Eliminar |
 
 ### Clientes (paginado)
 | Método | Ruta | Auth | Descripción |
@@ -269,6 +309,19 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 | Método | Ruta | Auth | Descripción |
 |--------|------|:----:|-------------|
 | GET | `/api/reports/supplier-spending?startDate=&endDate=` | JWT | Gastos por proveedor, rentabilidad |
+| GET | `/api/reports/services?startDate=&endDate=` | JWT | Reporte de servicios |
+
+### Panel Super Admin
+| Método | Ruta | Auth | Descripción |
+|--------|------|:----:|-------------|
+| GET | `/api/admin/stats` | Super Admin | Estadísticas globales |
+| GET | `/api/admin/businesses` | Super Admin | Listar negocios |
+| GET | `/api/admin/businesses/:id` | Super Admin | Detalle de negocio |
+| DELETE | `/api/admin/businesses/:id` | Super Admin | Eliminar negocio |
+| GET | `/api/admin/users` | Super Admin | Listar usuarios |
+| PUT | `/api/admin/users/:id` | Super Admin | Editar usuario |
+| PUT | `/api/admin/users/:id/reset-password` | Super Admin | Resetear contraseña |
+| DELETE | `/api/admin/users/:id` | Super Admin | Eliminar usuario |
 
 ### Usuarios
 | Método | Ruta | Auth | Descripción |
@@ -286,11 +339,13 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 
 | Variable | Requerida | Descripción |
 |----------|:---------:|-------------|
-| `DATABASE_URL` | ✅ | Cadena de conexión a PostgreSQL (Neon) |
-| `JWT_SECRET` | ✅ | Clave secreta para JWT (mín. 32 caracteres) |
+| `DATABASE_URL` | ⚠️* | Cadena de conexión PostgreSQL. Vacía/vacante → SQLite local |
+| `JWT_SECRET` | ⚠️* | Clave secreta para JWT (usa un valor por defecto en dev) |
 | `FRONTEND_URL` | ❌ | URL del frontend para CORS (default: auto) |
 | `RATE_LIMIT_MAX` | ❌ | Máximo de requests por ventana (default: 2000) |
 | `NODE_ENV` | ❌ | `production` en Vercel (se auto-detects) |
+
+> \* `DATABASE_URL` es obligatoria solo en producción (Vercel). `JWT_SECRET` se recomienda configurarlo siempre en producción.
 
 ---
 
@@ -303,7 +358,9 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 | `npm run dev:frontend` | Frontend con Vite dev server |
 | `npm run build` | Build de producción del frontend |
 | `npm start` | Inicia backend en producción |
-| `npm run migrate` | Inicializa/actualiza el schema PostgreSQL |
+| `npm run migrate` | Inicializa/actualiza el schema (PG o SQLite) |
+| `npm run seed` | Crea el super administrador (`backend/src/seed-admin.js`) |
+| `npm test` | Pruebas de conversión SQLite (`backend/test-sqlite-convert.js`) |
 
 ---
 

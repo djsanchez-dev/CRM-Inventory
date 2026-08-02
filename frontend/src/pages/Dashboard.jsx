@@ -45,7 +45,7 @@ export default function Dashboard() {
   const loadLowStock = async () => {
     try {
       const products = await api.getProducts('?low_stock=true');
-      setLowStockProducts(products);
+      setLowStockProducts(products.data || []);
     } catch (error) {
       console.error('Error loading low stock:', error);
     } finally {

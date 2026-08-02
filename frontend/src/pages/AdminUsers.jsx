@@ -35,17 +35,17 @@ export default function AdminUsers() {
   useEffect(() => { loadUsers(); }, [page, businessFilter]);
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(() => loadUsers(), 300);
+    const timeout = setTimeout(() => loadUsers(1), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
-  const loadUsers = async () => {
+  const loadUsers = async (pageOverride) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (businessFilter) params.set('business_id', businessFilter);
-      params.set('page', page.toString());
+      params.set('page', (pageOverride || page).toString());
       const result = await api.getAdminUsers(`?${params.toString()}`);
       setUsers(result.data || []);
       setPagination(result.pagination);

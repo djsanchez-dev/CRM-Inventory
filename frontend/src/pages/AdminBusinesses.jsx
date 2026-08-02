@@ -28,16 +28,16 @@ export default function AdminBusinesses() {
   useEffect(() => { loadBusinesses(); }, [page]);
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(() => loadBusinesses(), 300);
+    const timeout = setTimeout(() => loadBusinesses(1), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
-  const loadBusinesses = async () => {
+  const loadBusinesses = async (pageOverride) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      params.set('page', page.toString());
+      params.set('page', (pageOverride || page).toString());
       const result = await api.getAdminBusinesses(`?${params.toString()}`);
       setBusinesses(result.data || []);
       setPagination(result.pagination);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Search } from 'lucide-react';
+import { X, Search, MapPin, Bike } from 'lucide-react';
 import CartItem from './CartItem';
 import CustomerSection from './CustomerSection';
 import PointsSection from './PointsSection';
@@ -10,6 +10,7 @@ export default function SaleCreateModal({
   customers,
   onCreateSale,
   onQuickCreateCustomer,
+  deliveryMode = false,
 }) {
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -17,6 +18,9 @@ export default function SaleCreateModal({
   const [productSearch, setProductSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [puntosToUse, setPuntosToUse] = useState(0);
+  const [esDelivery, setEsDelivery] = useState(deliveryMode);
+  const [direccionEntrega, setDireccionEntrega] = useState('');
+  const [repartidor, setRepartidor] = useState('');
 
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoPuntos = selectedCustomer
@@ -79,6 +83,14 @@ export default function SaleCreateModal({
 
   const handleCreateSale = async () => {
     if (cart.length === 0) return;
+    if (esDelivery && !direccionEntrega.trim()) {
+      // Address is required for delivery orders
+      const input = document.querySelector('#sale-delivery-dir');
+      if (input) input.focus();
+      input?.setAttribute('data-invalid', '1');
+      setTimeout(() => input?.removeAttribute('data-invalid'), 1500);
+      return;
+    }
     setSaving(true);
     try {
       await onCreateSale({
@@ -89,6 +101,9 @@ export default function SaleCreateModal({
         })),
         tipo_pago: tipoPago,
         puntos_usados: descuentoPuntos,
+        es_delivery: esDelivery,
+        direccion_entrega: esDelivery ? direccionEntrega.trim() : null,
+        repartidor: esDelivery && repartidor.trim() ? repartidor.trim() : null,
       });
       onClose();
     } catch (e) {
@@ -114,7 +129,7 @@ export default function SaleCreateModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Nueva Venta</h2>
+          <h2>{esDelivery ? 'Nuevo Pedido Delivery' : 'Nueva Venta'}</h2>
           <button className="close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -207,6 +222,44 @@ export default function SaleCreateModal({
                     <option value="tarjeta">Tarjeta</option>
                     <option value="transferencia">Transferencia</option>
                   </select>
+                </div>
+
+                {/* Delivery section — licorería & businesses with delivery */}
+                <div className="delivery-section">
+                  <button
+                    type="button"
+                    className={`delivery-toggle ${esDelivery ? 'active' : ''}`}
+                    onClick={() => setEsDelivery(!esDelivery)}
+                    disabled={deliveryMode}
+                    title={deliveryMode ? 'Pedido de delivery obligatorio en esta sección' : undefined}
+                  >
+                    <Bike size={16} />
+                    <span>Entrega a domicilio (Delivery)</span>
+                  </button>
+                  {esDelivery && (
+                    <div className="delivery-fields">
+                      <div className="form-group">
+                        <label htmlFor="sale-delivery-dir">Dirección de entrega *</label>
+                        <input
+                          id="sale-delivery-dir"
+                          type="text"
+                          value={direccionEntrega}
+                          onChange={(e) => setDireccionEntrega(e.target.value)}
+                          placeholder="Ej: Av. Los Girasoles 123, San Juan"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="sale-delivery-rep">Repartidor (opcional)</label>
+                        <input
+                          id="sale-delivery-rep"
+                          type="text"
+                          value={repartidor}
+                          onChange={(e) => setRepartidor(e.target.value)}
+                          placeholder="Ej: Pedro"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="cart-total">

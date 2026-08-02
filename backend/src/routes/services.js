@@ -1,7 +1,11 @@
 const express = require('express');
 const { queryAll, queryOne } = require('../database');
+const { getVehicleTypes } = require('../config/businessTypes');
 
 const router = express.Router();
+
+// Single source of truth for vehicle types (from the carwash preset)
+const VALID_VEHICLES = getVehicleTypes().map((v) => v.id);
 
 /**
  * GET /api/services
@@ -10,7 +14,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { date, tipo, search, page = '1', limit = '50' } = req.query;
+    const { date, tipo, vehiculo, search, page = '1', limit = '50' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(200, Math.max(1, parseInt(limit) || 50));
@@ -29,6 +33,12 @@ router.get('/', async (req, res) => {
     if (tipo) {
       whereClause += ` AND s.tipo = $${paramIdx}`;
       params.push(tipo);
+      paramIdx++;
+    }
+
+    if (vehiculo) {
+      whereClause += ` AND s.tipo_vehiculo = $${paramIdx}`;
+      params.push(vehiculo);
       paramIdx++;
     }
 
@@ -97,6 +107,18 @@ router.get('/summary', async (req, res) => {
       [business_id, today]
     );
 
+    // Breakdown by vehicle type (daily) — cars washed per type + revenue
+    const porVehiculo = (await queryAll(
+      `SELECT s.tipo_vehiculo,
+         COUNT(*)::int as total,
+         COALESCE(SUM(s.precio), 0) as ingreso
+       FROM services s
+       WHERE s.business_id = $1 AND s.created_at::DATE = $2::DATE
+         AND s.tipo = 'carwash' AND s.tipo_vehiculo IS NOT NULL
+       GROUP BY s.tipo_vehiculo`,
+      [business_id, today]
+    )).map((row) => ({ ...row, ingreso: parseFloat(row.ingreso) }));
+
     const resumen = {
       carwash: { total: 0, ingreso: 0 },
       mecanica: { total: 0, ingreso: 0 },
@@ -115,6 +137,7 @@ router.get('/summary', async (req, res) => {
       total_servicios: totals ? totals.total_servicios : 0,
       ingreso_total: totals ? parseFloat(totals.ingreso_total) : 0,
       byTipo,
+      porVehiculo,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -127,7 +150,7 @@ router.get('/summary', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const business_id = req.user.business_id;
-    const { tipo, nombre, placa, cliente_id, precio, notas, fecha } = req.body;
+    const { tipo, nombre, tipo_vehiculo, placa, cliente_id, precio, notas, fecha } = req.body;
 
     if (!tipo || !['carwash', 'mecanica'].includes(tipo)) {
       return res.status(400).json({ error: 'Tipo de servicio inválido (carwash o mecanica)' });
@@ -141,20 +164,24 @@ router.post('/', async (req, res) => {
 
     // If a date is provided (e.g. backfilling a service done earlier), build a
     // full timestamp using the current time; otherwise let the DB default it.
+    if (tipo_vehiculo && !VALID_VEHICLES.includes(tipo_vehiculo)) {
+      return res.status(400).json({ error: 'Tipo de vehículo inválido' });
+    }
+
     let service;
     if (fecha && fecha.trim()) {
       const created_at = `${fecha.trim()} ${new Date().toTimeString().slice(0, 8)}`;
       service = await queryOne(
-        `INSERT INTO services (business_id, tipo, nombre, placa, cliente_id, precio, notas, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [business_id, tipo, nombre.trim(), placa || null, cliente_id || null,
+        `INSERT INTO services (business_id, tipo, nombre, tipo_vehiculo, placa, cliente_id, precio, notas, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [business_id, tipo, nombre.trim(), tipo_vehiculo || null, placa || null, cliente_id || null,
          parseFloat(precio), notas || null, created_at]
       );
     } else {
       service = await queryOne(
-        `INSERT INTO services (business_id, tipo, nombre, placa, cliente_id, precio, notas)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [business_id, tipo, nombre.trim(), placa || null, cliente_id || null,
+        `INSERT INTO services (business_id, tipo, nombre, tipo_vehiculo, placa, cliente_id, precio, notas)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [business_id, tipo, nombre.trim(), tipo_vehiculo || null, placa || null, cliente_id || null,
          parseFloat(precio), notas || null]
       );
     }

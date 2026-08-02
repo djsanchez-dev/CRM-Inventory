@@ -1,14 +1,28 @@
 import { useState } from 'react';
-import { X, Car, Wrench, Droplets } from '../Icons';
+import { X, Car, Wrench, Droplets, Bike, Tractor, BusFront, Van } from '../Icons';
+import { useBusinessConfig } from '../../context/BusinessConfig';
 
 const QUICK_SERVICES = {
   carwash: ['Lavado exterior', 'Lavado completo', 'Encerado', 'Aspirado', 'Lavado de motor'],
   mecanica: ['Cambio de aceite', 'Afinamiento', 'Frenos', 'Suspensión', 'Cambio de llanta'],
 };
 
+// Icons for each vehicle type (fallback if config lacks them)
+const VEHICLE_ICONS = {
+  moto: Bike,
+  mototaxi: Bike,
+  auto: Car,
+  cuatrimoto: Van,
+  combi: BusFront,
+  tractor: Tractor,
+  otro: Wrench,
+};
+
 export default function ServiceFormModal({ onClose, onSave, customers }) {
+  const { vehicleTypes = [] } = useBusinessConfig();
   const [tipo, setTipo] = useState('carwash');
   const [nombre, setNombre] = useState('');
+  const [tipoVehiculo, setTipoVehiculo] = useState('');
   const [placa, setPlaca] = useState('');
   const [clienteId, setClienteId] = useState('');
   const [precio, setPrecio] = useState('');
@@ -19,8 +33,30 @@ export default function ServiceFormModal({ onClose, onSave, customers }) {
 
   const quickOptions = QUICK_SERVICES[tipo] || [];
 
+  // Vehicle types to show (from business config for carwash, fallback list otherwise)
+  const vehicles =
+    vehicleTypes.length > 0
+      ? vehicleTypes
+      : [
+          { id: 'moto', label: 'Moto', precio: 8 },
+          { id: 'mototaxi', label: 'Mototaxi', precio: 10 },
+          { id: 'auto', label: 'Auto', precio: 15 },
+          { id: 'cuatrimoto', label: 'Cuatrimoto', precio: 15 },
+          { id: 'combi', label: 'Combi', precio: 20 },
+          { id: 'tractor', label: 'Tractor', precio: 25 },
+          { id: 'otro', label: 'Otro', precio: null },
+        ];
+
   const handleQuick = (name) => {
     setNombre(name);
+  };
+
+  // Selecting a vehicle type auto-fills its base price (still editable).
+  // Types without a default price (e.g. 'otro') clear the field.
+  const handleVehicleSelect = (id) => {
+    setTipoVehiculo(id);
+    const vt = vehicles.find((v) => v.id === id);
+    setPrecio(vt && vt.precio != null ? String(vt.precio) : '');
   };
 
   const handleSubmit = async (e) => {
@@ -39,6 +75,7 @@ export default function ServiceFormModal({ onClose, onSave, customers }) {
       await onSave({
         tipo,
         nombre: nombre.trim(),
+        tipo_vehiculo: tipoVehiculo || null,
         placa: placa.trim() || null,
         cliente_id: clienteId ? parseInt(clienteId, 10) : null,
         precio: parseFloat(precio),
@@ -80,7 +117,7 @@ export default function ServiceFormModal({ onClose, onSave, customers }) {
                 <button
                   type="button"
                   className={`service-type-btn ${tipo === 'carwash' ? 'active' : ''}`}
-                  onClick={() => { setTipo('carwash'); setNombre(''); }}
+                  onClick={() => { setTipo('carwash'); setNombre(''); setTipoVehiculo(''); setPrecio(''); }}
                 >
                   <Droplets size={18} />
                   <span>Car Wash</span>
@@ -88,13 +125,47 @@ export default function ServiceFormModal({ onClose, onSave, customers }) {
                 <button
                   type="button"
                   className={`service-type-btn ${tipo === 'mecanica' ? 'active' : ''}`}
-                  onClick={() => { setTipo('mecanica'); setNombre(''); }}
+                  onClick={() => { setTipo('mecanica'); setNombre(''); setTipoVehiculo(''); setPrecio(''); }}
                 >
                   <Wrench size={18} />
                   <span>Mecánica</span>
                 </button>
               </div>
             </div>
+
+            {/* Tipo de vehículo — se lava todo vehículo con motor (solo Car Wash) */}
+            {tipo === 'carwash' && (
+              <div className="form-group">
+                <label>Tipo de Vehículo</label>
+                <div className="vehicle-type-grid">
+                  {vehicles.map((v) => {
+                    const Icon = VEHICLE_ICONS[v.id] || Car;
+                    const selected = tipoVehiculo === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        className={`vehicle-type-btn ${selected ? 'selected' : ''}`}
+                        onClick={() => handleVehicleSelect(v.id)}
+                      >
+                        <Icon size={18} />
+                        <span className="vt-label">{v.label}</span>
+                        {v.precio != null && (
+                          <span className="vt-price">{formatCurrency(v.precio)}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {tipoVehiculo && (
+                  <p className="field-hint">
+                    {vehicles.find((v) => v.id === tipoVehiculo)?.precio != null
+                      ? 'Precio base del vehículo cargado — puedes modificarlo.'
+                      : 'Precio libre para este tipo de vehículo.'}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Nombre + quick options */}
             <div className="form-group">

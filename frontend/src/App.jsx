@@ -16,6 +16,7 @@ const Categories = lazy(() => import('./pages/Categories'));
 const Customers = lazy(() => import('./pages/Customers'));
 const Suppliers = lazy(() => import('./pages/Suppliers'));
 const Sales = lazy(() => import('./pages/Sales'));
+const Delivery = lazy(() => import('./pages/Delivery'));
 const Purchases = lazy(() => import('./pages/Purchases'));
 const Services = lazy(() => import('./pages/Services'));
 const Reports = lazy(() => import('./pages/Reports'));
@@ -71,6 +72,7 @@ function AppContent() {
           <Route path="customers" element={<Customers />} />
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="sales" element={<Sales />} />
+          <Route path="delivery" element={<Delivery />} />
           <Route path="purchases" element={<Purchases />} />
           <Route path="services" element={<Services />} />
           <Route path="reports" element={<Reports />} />

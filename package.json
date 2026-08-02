@@ -10,14 +10,16 @@
     "build": "cd frontend && npm install && npm run build",
     "start": "node api/index.js",
     "migrate": "node -e \"require('./backend/src/database').initSchema().then(() => { console.log('✓ Schema initialized'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); })\"",
-    "seed": "node backend/src/seed.js"
+    "seed": "node backend/src/seed-admin.js",
+    "test": "node backend/test-sqlite-convert.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^13.0.2",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
-    "express-validator": "^7.3.2",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.0",

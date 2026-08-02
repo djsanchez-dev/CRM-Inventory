@@ -1990,6 +1990,136 @@
   color: #fff;
 }
 
+/* Vehicle type selector (form) — se lavan todo vehículo con motor */
+.vehicle-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vehicle-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 8px;
+  border: 2px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 10px);
+  background: var(--card-bg, #fff);
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  font-family: var(--font, inherit);
+  transition: all 0.2s ease;
+}
+.vehicle-type-btn:hover {
+  border-color: #0ea5e9;
+  background: #f0f9ff;
+  color: #0ea5e9;
+}
+.vehicle-type-btn.selected {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.08);
+  color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+.vt-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+}
+.vt-price {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #0ea5e9;
+  opacity: 0.85;
+}
+
+/* Vehicle filter dropdown (toolbar) */
+.vehicle-filter { align-items: center; }
+.vehicle-filter-select {
+  padding: 7px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  color: var(--text-muted, #64748b);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: var(--font, inherit);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.vehicle-filter-select:hover,
+.vehicle-filter-select:focus {
+  border-color: #0ea5e9;
+}
+
+/* Daily stats — vehicles washed today */
+.vehicle-stats-panel {
+  margin-top: 16px;
+  margin-bottom: 4px;
+  padding: 16px 20px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: var(--shadow-sm, none);
+}
+.vehicle-stats-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-primary, #0f172a);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.vehicle-stats-header svg { color: #0ea5e9; }
+.vehicle-stats-total {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+.vehicle-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vehicle-stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: var(--radius-md, 10px);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.vehicle-stat-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm, none);
+}
+.vehicle-stat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.vehicle-stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+}
+.vehicle-stat-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.vehicle-stat-value small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+}
+
 @media (max-width: 768px) {
   .daily-control-header {
     flex-direction: column;
@@ -2054,3 +2184,241 @@
     width: 100%;
   }
 }
+
+/* ===========================
+   Delivery (Licorería) — pedidos a domicilio
+   =========================== */
+.delivery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.delivery-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delivery-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.delivery-title h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.delivery-title p {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #64748b);
+}
+
+.delivery-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.delivery-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.delivery-card:hover {
+  border-color: #fcd34d;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.delivery-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.delivery-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.delivery-order {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.delivery-customer,
+.delivery-address,
+.delivery-rider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.delivery-address svg,
+.delivery-rider svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.delivery-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+}
+
+.delivery-card-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.delivery-total {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f59e0b;
+}
+
+.delivery-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-success {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.btn-success:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.delivery-section {
+  margin-top: 4px;
+}
+
+.delivery-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: var(--card-bg, #fff);
+  color: var(--text-muted, #64748b);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.delivery-toggle:hover:not(:disabled) {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.delivery-toggle.active {
+  border-style: solid;
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.08);
+  color: #0ea5e9;
+}
+
+.delivery-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.03);
+}
+
+.delivery-toggle:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  background: rgba(14, 165, 233, 0.08);
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  border-style: solid;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-color, #e2e8f0);
+  color: var(--text-muted, #64748b);
+}
+
+.btn-ghost:hover {
+  border-color: #fcd34d;
+  color: #f59e0b;
+}
+
+.btn-ghost-danger {
+  background: transparent;
+  border-color: var(--border-color, #e2e8f0);
+  color: #ef4444;
+}
+
+.btn-ghost-danger:hover {
+  border-color: #fca5a5;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+@media (max-width: 768px) {
+  .delivery-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+  }
+  .delivery-card-side {
+    align-items: stretch;
+    margin-left: 0;
+  }
+  .delivery-total {
+    text-align: right;
+  }
+  .delivery-actions {
+    justify-content: flex-start;
+  }
+}
+

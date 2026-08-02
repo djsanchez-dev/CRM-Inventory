@@ -79,6 +79,60 @@ router.post('/', adminOnly, async (req, res) => {
   }
 });
 
+// PUT /api/users/profile - Update own profile
+// NOTE: must be defined BEFORE /:id so 'profile' is not treated as an id
+router.put('/profile', async (req, res) => {
+  try {
+    const { nombre, currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ error: 'Debes ingresar tu contraseña actual para cambiarla' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+      }
+
+      const user = await queryOne('SELECT password FROM users WHERE id = $1', [userId]);
+      if (!bcrypt.compareSync(currentPassword, user.password)) {
+        return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
+      }
+
+      await queryOne(
+        'UPDATE users SET password = $1, nombre = COALESCE($2, nombre), updated_at = NOW() WHERE id = $3 RETURNING *',
+        [bcrypt.hashSync(newPassword, 10), nombre, userId]
+      );
+    } else {
+      await queryOne(
+        'UPDATE users SET nombre = COALESCE($1, nombre), updated_at = NOW() WHERE id = $2 RETURNING *',
+        [nombre, userId]
+      );
+    }
+
+    const updated = await queryOne(
+      'SELECT id, username, nombre, rol, created_at, business_id FROM users WHERE id = $1',
+      [userId]
+    );
+
+    const token = jwt.sign(
+      {
+        id: updated.id,
+        username: updated.username,
+        nombre: updated.nombre,
+        rol: updated.rol,
+        business_id: updated.business_id,
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({ user: updated, token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /api/users/:id
 router.put('/:id', adminOnly, async (req, res) => {
   try {
@@ -166,59 +220,6 @@ router.delete('/:id', adminOnly, async (req, res) => {
     }
 
     res.json({ message: 'Usuario eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// PUT /api/users/profile - Update own profile
-router.put('/profile', async (req, res) => {
-  try {
-    const { nombre, currentPassword, newPassword } = req.body;
-    const userId = req.user.id;
-
-    if (newPassword) {
-      if (!currentPassword) {
-        return res.status(400).json({ error: 'Debes ingresar tu contraseña actual para cambiarla' });
-      }
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
-      }
-
-      const user = await queryOne('SELECT password FROM users WHERE id = $1', [userId]);
-      if (!bcrypt.compareSync(currentPassword, user.password)) {
-        return res.status(400).json({ error: 'La contraseña actual es incorrecta' });
-      }
-
-      await queryOne(
-        'UPDATE users SET password = $1, nombre = COALESCE($2, nombre), updated_at = NOW() WHERE id = $3 RETURNING *',
-        [bcrypt.hashSync(newPassword, 10), nombre, userId]
-      );
-    } else {
-      await queryOne(
-        'UPDATE users SET nombre = COALESCE($1, nombre), updated_at = NOW() WHERE id = $2 RETURNING *',
-        [nombre, userId]
-      );
-    }
-
-    const updated = await queryOne(
-      'SELECT id, username, nombre, rol, created_at, business_id FROM users WHERE id = $1',
-      [userId]
-    );
-
-    const token = jwt.sign(
-      {
-        id: updated.id,
-        username: updated.username,
-        nombre: updated.nombre,
-        rol: updated.rol,
-        business_id: updated.business_id,
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({ user: updated, token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

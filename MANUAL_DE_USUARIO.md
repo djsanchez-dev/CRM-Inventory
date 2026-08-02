@@ -47,14 +47,16 @@ El **Sistema de Gestión Comercial** es una plataforma integral diseñada para a
 | **Clientes** | Base de datos de clientes con historial y puntos de fidelidad |
 | **Ventas** | Punto de venta con opciones de cobro y facturación |
 | **Compras** | Registro de órdenes de compra y reposición de stock |
+| **Servicios** | Control diario de servicios (Car Wash y Mecánica) para negocios tipo carwash |
 | **Reportes** | Análisis de datos con exportación a PDF/CSV |
 | **Usuarios** | Administración de cuentas y permisos |
 
 ### 1.3 Roles de Usuario
 
-El sistema contempla dos roles con distintos niveles de acceso:
+El sistema contempla tres roles con distintos niveles de acceso:
 
-- **Administrador:** Acceso completo a todas las funcionalidades del sistema, incluyendo la gestión de usuarios.
+- **Super Administrador:** Usuario global que gestiona todos los negocios del sistema desde un panel exclusivo (creado con `npm run seed`).
+- **Administrador:** Acceso completo a las funcionalidades de su negocio, incluyendo la gestión de usuarios.
 - **Usuario:** Acceso a las operaciones diarias (ventas, compras, productos) sin capacidad de administrar cuentas de otros usuarios.
 
 ---
@@ -101,14 +103,16 @@ Pantalla de ingreso con los siguientes campos:
 
 ### 3.3 Primera Configuración (Setup Inicial)
 
-Al acceder por primera vez al sistema (cuando no hay ningún negocio registrado), se mostrará un **asistente de configuración** para crear el negocio y el usuario administrador:
+Al acceder por primera vez al sistema (cuando no hay ningún negocio registrado), se mostrará un **asistente de configuración** en `/setup` para crear el negocio y el usuario administrador:
 
 1. **Nombre del negocio:** Razón social o nombre comercial
-2. **Tipo de negocio:** Seleccione el rubro (General, Licorería, Abarrotes, Ropa, Electrónicos)
-3. **Moneda:** Seleccione la moneda de operación (PEN, USD, MXN, etc.)
-4. **Usuario administrador:** Cree un nombre de usuario único
-5. **Contraseña:** Defina una contraseña segura (mínimo 6 caracteres)
-6. **Nombre:** Nombre completo del administrador
+2. **Tipo de negocio:** Seleccione el rubro (General / Tienda, Car Wash, Licorería, Abarrotes, Ropa, Electrónicos, Otro)
+3. **Moneda:** Seleccione la moneda de operación (PEN, USD, MXN, COP, EUR, etc.)
+4. **Nombre del administrador:** Nombre completo
+5. **Usuario administrador:** Cree un nombre de usuario único
+6. **Contraseña:** Defina una contraseña segura (mínimo 6 caracteres)
+
+> El asistente solo se muestra cuando no existe ningún negocio. Para crear negocios adicionales use el enlace **"Crear otro negocio"** desde la pantalla de login.
 
 > ⚠️ **Importante:** Guarde estas credenciales en un lugar seguro. El asistente solo se muestra una vez.
 
@@ -422,9 +426,10 @@ Si la venta está asociada a un cliente con puntos acumulados:
 #### Paso 5: Seleccionar Tipo de Pago
 Seleccione el método de pago entre las opciones disponibles:
 - Efectivo
-- Tarjeta de Débito/Crédito
+- Tarjeta
 - Transferencia
-- Crédito
+
+> Si el negocio requiere otros métodos (Yape, Plin, etc.), estos se configuran en el backend (`tipo_pago`).
 
 #### Paso 6: Completar la Venta
 1. Presione **"Cobrar"** para finalizar la transacción.
@@ -435,7 +440,7 @@ Seleccione el método de pago entre las opciones disponibles:
 
 ### 10.3 Historial de Ventas
 
-Debajo del formulario de nueva venta, se muestra el historial completo de transacciones con la siguiente información:
+En la vista de **Ventas** se muestra el historial completo de transacciones con la siguiente información (con paginación y filtros por fecha, cliente y tipo de pago):
 
 | Columna | Descripción |
 |---------|-------------|

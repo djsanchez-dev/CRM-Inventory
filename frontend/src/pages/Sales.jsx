@@ -36,14 +36,14 @@ export default function Sales() {
     }).catch(() => {});
   }, []);
 
-  const buildParams = () => {
+  const buildParams = (pg) => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
     if (dateFilter.startDate) params.set('startDate', dateFilter.startDate);
     if (dateFilter.endDate) params.set('endDate', dateFilter.endDate);
     if (tipoPagoFilter) params.set('tipo_pago', tipoPagoFilter);
     if (customerFilter) params.set('customer_id', customerFilter);
-    params.set('page', page.toString());
+    params.set('page', (pg || page).toString());
     const qs = params.toString();
     return qs ? `?${qs}` : '';
   };
@@ -62,7 +62,7 @@ export default function Sales() {
 
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(loadSales, 300);
+    const timeout = setTimeout(() => loadSales(1), 300);
     return () => clearTimeout(timeout);
   }, [search, dateFilter, tipoPagoFilter, customerFilter]);
 
@@ -70,9 +70,9 @@ export default function Sales() {
     loadSales();
   }, [page]);
 
-  const loadSales = async () => {
+  const loadSales = async (pageOverride) => {
     try {
-      const result = await api.getSales(buildParams());
+      const result = await api.getSales(buildParams(pageOverride));
       setSales(result.data || []);
       setPagination(result.pagination);
     } catch (error) {

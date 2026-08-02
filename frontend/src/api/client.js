@@ -236,6 +236,9 @@ export const api = {
   deleteSale: (id) =>
     request(`/sales/${id}`, { method: 'DELETE' }),
 
+  updateDeliveryStatus: (id, data) =>
+    request(`/sales/${id}/delivery`, { method: 'PUT', body: JSON.stringify(data) }),
+
   // ========== Services (Car Wash / Mecánica) ==========
   getServices: (params = '') =>
     request(`/services${typeof params === 'string' ? params : buildQuery(params)}`),

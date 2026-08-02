@@ -565,16 +565,29 @@ export async function exportReportsPDF(data, dateFilter) {
 /**
  * Exporta ventas a PDF
  */
+// Vehicle type labels (match businessTypes.js carwash preset)
+const VEHICLE_LABELS = {
+  moto: 'Moto',
+  mototaxi: 'Mototaxi',
+  auto: 'Auto',
+  cuatrimoto: 'Cuatrimoto',
+  combi: 'Combi',
+  tractor: 'Tractor',
+  otro: 'Otro',
+};
+const vehicleLabel = (id) => VEHICLE_LABELS[id] || id || '—';
+
 /**
  * Exporta servicios a CSV
  */
 export function exportServicesCSV(services) {
-  const columns = ['id', 'tipo', 'nombre', 'placa', 'customer_name', 'precio_raw', 'notas', 'created_at'];
-  const headers = ['#', 'Tipo', 'Servicio', 'Placa', 'Cliente', 'Precio', 'Notas', 'Fecha'];
+  const columns = ['id', 'tipo', 'vehiculo', 'nombre', 'placa', 'customer_name', 'precio_raw', 'notas', 'created_at'];
+  const headers = ['#', 'Tipo', 'Vehículo', 'Servicio', 'Placa', 'Cliente', 'Precio', 'Notas', 'Fecha'];
 
   const data = services.map((s) => ({
     id: `#${s.id}`,
     tipo: s.tipo === 'carwash' ? 'Car Wash' : 'Mecánica',
+    vehiculo: vehicleLabel(s.tipo_vehiculo),
     nombre: s.nombre,
     placa: s.placa || '',
     customer_name: s.customer_name || '',
@@ -591,21 +604,22 @@ export function exportServicesCSV(services) {
  */
 export async function exportServicesPDF(services, fecha) {
   try {
-    const headers = ['#', 'Hora', 'Tipo', 'Servicio', 'Placa', 'Cliente', 'Precio'];
+    const headers = ['#', 'Hora', 'Tipo', 'Vehículo', 'Servicio', 'Placa', 'Cliente', 'Precio'];
 
     const body = services.map((s) => [
       `#${s.id}`,
       new Date(s.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
       s.tipo === 'carwash' ? 'Car Wash' : 'Mecánica',
+      vehicleLabel(s.tipo_vehiculo),
       s.nombre,
       s.placa || '—',
       s.customer_name || '—',
       formatCurrency(s.precio),
     ]);
 
-    // Summary row
+    // Summary row (TOTAL lands in the 'Servicio' column — index 4 of 8)
     const totalIngreso = services.reduce((sum, s) => sum + s.precio, 0);
-    body.push(['', '', '', 'TOTAL', '', '', formatCurrency(totalIngreso)]);
+    body.push(['', '', '', '', 'TOTAL', '', '', formatCurrency(totalIngreso)]);
 
     const subtitle = fecha
       ? `Control diario — ${fecha}`

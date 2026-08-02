@@ -43,6 +43,7 @@ export {
   DollarSign as Money,
   DollarSign as Dollar,
   CheckCircle,
+  CheckCircle2,
   AlertTriangle as Alert,
   AlertCircle,
   Bell,
@@ -78,4 +79,8 @@ export {
   Wrench,
   Droplets,
   CalendarDays,
+  Bike,
+  Tractor,
+  BusFront,
+  Truck as Van,
 } from 'lucide-react';

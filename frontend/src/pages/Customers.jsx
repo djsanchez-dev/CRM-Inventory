@@ -25,17 +25,17 @@ export default function Customers() {
   useEffect(() => { loadCustomers(); }, [page]);
   useEffect(() => {
     setPage(1);
-    const timeout = setTimeout(loadCustomers, 300);
+    const timeout = setTimeout(() => loadCustomers(1), 300);
     return () => clearTimeout(timeout);
   }, [search, hasPoints, sortBy]);
 
-  const loadCustomers = async () => {
+  const loadCustomers = async (pageOverride) => {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (hasPoints) params.set('has_points', 'true');
       if (sortBy !== 'nombre') params.set('sort', sortBy);
-      params.set('page', page.toString());
+      params.set('page', (pageOverride || page).toString());
       const result = await api.getCustomers(`?${params.toString()}`);
       setCustomers(result.data || []);
       setPagination(result.pagination);

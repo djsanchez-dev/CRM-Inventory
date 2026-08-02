@@ -82,6 +82,17 @@ const BUSINESS_PRESETS = {
       ],
       sale: [],
     },
+    // Vehicle types washed at the carwash — default price auto-fills on selection
+    // (editable per service). 'otro' has no default so the user types the price.
+    vehicleTypes: [
+      { id: 'moto', label: 'Moto', precio: 8 },
+      { id: 'mototaxi', label: 'Mototaxi', precio: 10 },
+      { id: 'auto', label: 'Auto', precio: 15 },
+      { id: 'cuatrimoto', label: 'Cuatrimoto', precio: 15 },
+      { id: 'combi', label: 'Combi', precio: 20 },
+      { id: 'tractor', label: 'Tractor', precio: 25 },
+      { id: 'otro', label: 'Otro', precio: null },
+    ],
   },
 
   licoreria: {
@@ -123,6 +134,15 @@ const BUSINESS_PRESETS = {
       customer: [],
       sale: [],
     },
+    // Default categories seeded automatically when a licorería is created
+    defaultCategories: [
+      { nombre: 'Bebidas Alcohólicas', descripcion: 'Vinos, cervezas, licores y destilados' },
+      { nombre: 'Snacks', descripcion: 'Papas, galletas, frutos secos y botanas' },
+      { nombre: 'Cigarros', descripcion: 'Tabaco y cigarrillos' },
+      { nombre: 'Bebidas', descripcion: 'Gaseosas, agua, jugos y energizantes' },
+      { nombre: 'Cervezas', descripcion: 'Cervezas nacionales e importadas' },
+      { nombre: 'Vinos y Licores', descripcion: 'Vinos, whiskys, rones y otros destilados' },
+    ],
   },
 
   abarrotes: {
@@ -260,6 +280,16 @@ function getPreset(type) {
   return BUSINESS_PRESETS[normalizeType(type)];
 }
 
+/** Return the canonical list of vehicle types washed at a carwash */
+function getVehicleTypes() {
+  return BUSINESS_PRESETS.carwash.vehicleTypes || [];
+}
+
+/** Return default categories to seed for a business type (or empty) */
+function getDefaultCategories(type) {
+  return BUSINESS_PRESETS[normalizeType(type)]?.defaultCategories || [];
+}
+
 /** Resolve the full config by merging stored JSON config with the preset */
 function resolveConfig(storedConfig, tipo_negocio) {
   // storedConfig is already parsed JSON from the DB
@@ -274,8 +304,9 @@ function resolveConfig(storedConfig, tipo_negocio) {
     idioma: storedConfig.idioma || 'es',
     labels,
     extraFields: preset.extraFields,
+    vehicleTypes: preset.vehicleTypes || [],
     businessTypeInfo: preset,
   };
 }
 
-module.exports = { BUSINESS_PRESETS, getPreset, resolveConfig, normalizeType };
+module.exports = { BUSINESS_PRESETS, getPreset, getVehicleTypes, getDefaultCategories, resolveConfig, normalizeType };

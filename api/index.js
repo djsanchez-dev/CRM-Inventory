@@ -1,3 +1,6 @@
+// Load .env from project root so DATABASE_URL/JWT_SECRET/etc. work in local dev
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

@@ -17,6 +17,7 @@ import {
   Users,
   Shield,
   Building2,
+  Bike as DeliveryIcon,
 } from './Icons';
 
 export default function Layout() {
@@ -39,6 +40,7 @@ export default function Layout() {
     '/app/purchases': { icon: Purchases, color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)' },
     '/app/sales': { icon: Sales, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' },
     '/app/services': { icon: ServicesIcon, color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.12)' },
+    '/app/delivery': { icon: DeliveryIcon, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
     '/app/reports': { icon: Reports, color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.12)' },
     '/app/users': { icon: Users, color: '#6b7280', bg: 'rgba(107, 114, 128, 0.12)' },
     '/app/admin': { icon: Shield, color: '#dc2626', bg: 'rgba(220, 38, 38, 0.12)' },
@@ -49,6 +51,9 @@ export default function Layout() {
   // Services module (Car Wash / Mecánica) is only available for carwash-type businesses
   const showServices = tipo === 'carwash';
 
+  // Delivery module is only available for licorería-type businesses
+  const showDelivery = tipo === 'licoreria' || tipo === 'general';
+
   const navItems = [
     { to: '/app', label: t('dashboard'), end: true },
     { to: '/app/products', label: t('product_plural') },
@@ -58,6 +63,7 @@ export default function Layout() {
     { to: '/app/purchases', label: t('purchase_plural') },
     { to: '/app/sales', label: t('sale_plural') },
     ...(showServices ? [{ to: '/app/services', label: t('service_plural') }] : []),
+    ...(showDelivery ? [{ to: '/app/delivery', label: 'Delivery' }] : []),
     { to: '/app/reports', label: t('report_plural') },
   ];
 
@@ -90,7 +96,7 @@ export default function Layout() {
     const checkLowStock = async () => {
       try {
         const data = await api.getProducts('?low_stock=true');
-        setLowStockCount(data.length);
+        setLowStockCount(data?.data?.length || 0);
       } catch (e) { /* ignore */ }
     };
     checkLowStock();
