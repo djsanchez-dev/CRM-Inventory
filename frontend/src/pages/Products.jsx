@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import { Package, Search, Edit, Trash, Plus, X } from '../components/Icons';
+import { Package, Search, Edit, Trash, Plus, X, FileDown, FileText } from '../components/Icons';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useBusinessConfig } from '../context/BusinessConfig';
 import { useToast } from '../components/Toast';
@@ -126,9 +126,13 @@ export default function Products() {
           )}
           <div className="export-buttons">
             <button className="btn btn-export" onClick={() => exportProductsCSV(products)}
-              disabled={products.length === 0}>CSV</button>
+              disabled={products.length === 0} title="Exportar a CSV">
+              <FileDown size={18} /><span>CSV</span>
+            </button>
             <button className="btn btn-export pdf" onClick={() => exportProductsPDF(products)}
-              disabled={products.length === 0}>PDF</button>
+              disabled={products.length === 0} title="Exportar a PDF">
+              <FileText size={18} /><span>PDF</span>
+            </button>
           </div>
           <button className="btn btn-primary" onClick={openCreate}>
             <Plus size={18} /> Nuevo {t('product')}

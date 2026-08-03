@@ -51,8 +51,9 @@ export default function Layout() {
   // Services module (Car Wash / Mecánica) is only available for carwash-type businesses
   const showServices = tipo === 'carwash';
 
-  // Delivery module is only available for licorería-type businesses
-  const showDelivery = tipo === 'licoreria' || tipo === 'general';
+  // Delivery module for stores that ship to customers:
+  // licoreria, general, abarrotes, ropa, electronica
+  const showDelivery = ['licoreria', 'general', 'abarrotes', 'ropa', 'electronica'].includes(tipo);
 
   const navItems = [
     { to: '/app', label: t('dashboard'), end: true },

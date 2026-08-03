@@ -71,7 +71,7 @@ export async function downloadPDF(title, subtitle, headers, body, filename) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   // Colors
-  const primaryColor = [99, 102, 241]; // #6366f1
+  const primaryColor = [79, 70, 229]; // #4f46e5
   const grayBg = [248, 250, 252];
   const grayBorder = [226, 232, 240];
 
@@ -343,7 +343,7 @@ export async function exportDashboardPDF(data) {
     await import('jspdf-autotable');
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const primaryColor = [99, 102, 241];
+    const primaryColor = [79, 70, 229];
     const grayBg = [248, 250, 252];
     const grayBorder = [226, 232, 240];
 
@@ -636,6 +636,121 @@ export async function exportServicesPDF(services, fecha) {
     console.error('Error al exportar PDF:', error);
     alert('Error al generar el PDF. Asegúrate de que las dependencias estén instaladas (npm install).');
   }
+}
+
+/**
+ * Imprime un ticket POS simple de una venta (usando el diálogo de impresión
+ * del navegador). Abre una ventana nueva con el ticket formateado y llama a
+ * window.print() cuando el contenido está listo.
+ */
+export function printSaleTicket(sale) {
+  const fmt = (v) =>
+    new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(v) || 0);
+
+  const fmtDate = (d) => {
+    if (!d) return '';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleString('es-PE', {
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+    });
+  };
+
+  const itemsRows = (sale.items || [])
+    .map(
+      (it) => `
+        <tr>
+          <td style="padding:4px 0;font-size:12px">${escapeHtml(it.product_name || 'Producto')}</td>
+          <td style="padding:4px 0;font-size:12px;text-align:center">${it.cantidad}</td>
+          <td style="padding:4px 0;font-size:12px;text-align:right">${fmt(it.precio_unitario)}</td>
+          <td style="padding:4px 0;font-size:12px;text-align:right">${fmt(it.subtotal)}</td>
+        </tr>`
+    )
+    .join('');
+
+  const deliveryInfo = sale.es_delivery
+    ? `
+      <tr style="border-top:1px dashed #999">
+        <td colspan="2" style="padding:6px 0;font-size:12px"><strong>Delivery</strong></td>
+        <td colspan="2" style="padding:6px 0;font-size:12px;text-align:right">${escapeHtml(sale.direccion_entrega || '')}</td>
+      </tr>`
+    : '';
+
+  const notaRow = sale.nota
+    ? `<div style="margin-top:8px;font-size:11px;color:#555"><strong>Notas:</strong> ${escapeHtml(sale.nota)}</div>`
+    : '';
+
+  const win = window.open('', '_blank', 'width=420,height=640');
+  if (!win) {
+    alert('Permite ventanas emergentes para imprimir el ticket.');
+    return;
+  }
+
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8" />
+      <title>Ticket #${sale.id}</title>
+      <style>
+        body { font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; color: #111; }
+        h1 { font-size: 16px; text-align: center; margin: 8px 0 2px; }
+        .sub { text-align: center; font-size: 11px; color: #555; margin-bottom: 8px; }
+        .divider { border-top: 1px dashed #999; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th { font-size: 11px; text-align: left; border-bottom: 1px solid #999; padding-bottom: 3px; }
+        th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }
+        td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: right; }
+        .total { font-size: 14px; font-weight: bold; text-align: right; margin-top: 6px; }
+        .meta { font-size: 11px; color: #333; margin: 3px 0; }
+        .footer { text-align: center; font-size: 11px; margin-top: 14px; color: #777; }
+        @media print { body { width: 100%; } }
+      </style>
+    </head>
+    <body>
+      <h1>${escapeHtml(sale.business_name || 'Mi Negocio')}</h1>
+      <div class="sub">Ticket de venta</div>
+      <div class="meta">Venta #${sale.id}</div>
+      <div class="meta">Fecha: ${fmtDate(sale.created_at)}</div>
+      <div class="meta">Cliente: ${escapeHtml(sale.customer_name || 'Sin cliente')}</div>
+      <div class="divider"></div>
+      <table>
+        <thead>
+          <tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th></tr>
+        </thead>
+        <tbody>${itemsRows}</tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="meta">Pago: ${escapeHtml(sale.tipo_pago || 'efectivo')}</div>
+      ${deliveryInfo}
+      ${notaRow}
+      <div class="total">TOTAL: ${fmt(sale.total)}</div>
+      <div class="footer">¡Gracias por su compra!</div>
+    </body>
+    </html>
+  `);
+  win.document.close();
+
+  // Print once the content is fully rendered (single mechanism to avoid
+  // opening the print dialog twice on some browsers).
+  let printed = false;
+  const doPrint = () => {
+    if (printed) return;
+    printed = true;
+    win.focus();
+    win.print();
+  };
+  win.onload = doPrint;
+  setTimeout(doPrint, 350);
+}
+
+/** Escape HTML entities for safe interpolation inside the ticket */
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export async function exportSalesPDF(sales) {

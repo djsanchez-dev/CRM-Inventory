@@ -10,6 +10,8 @@ import { LoadingProvider } from './components/LoadingOverlay';
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const BusinessSetup = lazy(() => import('./pages/BusinessSetup'));
+const TrackingPage = lazy(() => import('./pages/TrackingPage'));
+const ShareLocationPage = lazy(() => import('./pages/ShareLocationPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Products = lazy(() => import('./pages/Products'));
 const Categories = lazy(() => import('./pages/Categories'));
@@ -58,6 +60,10 @@ function AppContent() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/setup" element={<BusinessSetup />} />
+        {/* Public delivery tracking — no login required (link shared by the store) */}
+        <Route path="/tracking/:token" element={<TrackingPage />} />
+        {/* Public delivery-person location sharing — no login required */}
+        <Route path="/share/:token" element={<ShareLocationPage />} />
         <Route
           path="/app"
           element={

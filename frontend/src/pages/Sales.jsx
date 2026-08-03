@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import { Plus, Search, ShoppingCart, X, Eye, Trash, FileDown, FileText } from '../components/Icons';
-import ConfirmDialog from '../components/ConfirmDialog';
+import { Plus, Search, ShoppingCart, X, Eye, Trash, FileDown, FileText, Edit, Printer, Bike } from '../components/Icons';
+import { canUseDelivery, DELIVERY_STATE_LABEL } from '../utils/deliveryTypes';
 import { useBusinessConfig } from '../context/BusinessConfig';
+import { printSaleTicket } from '../utils/export';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
 import Skeleton from '../components/Skeleton';
 import Pagination from '../components/Pagination';
@@ -12,7 +14,7 @@ import SaleCreateModal from '../components/sales/SaleCreateModal';
 import SaleDetailModal from '../components/sales/SaleDetailModal';
 
 export default function Sales() {
-  const { t } = useBusinessConfig();
+  const { t, tipo } = useBusinessConfig();
   const toast = useToast();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,7 @@ export default function Sales() {
   const [pagination, setPagination] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(null);
+  const [editSale, setEditSale] = useState(null); // { sale, products, customers }
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -113,6 +116,34 @@ export default function Sales() {
     return newCustomer;
   };
 
+  const handleUpdateSale = async (id, saleData) => {
+    try {
+      await api.updateSale(id, saleData);
+      setEditSale(null);
+      toast.success(`Venta #${id} actualizada correctamente`);
+      loadSales();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const openEditModal = async (sale) => {
+    try {
+      const [productsData, customersData, detail] = await Promise.all([
+        api.getProducts('?limit=500'),
+        api.getCustomers('?limit=500'),
+        api.getSale(sale.id),
+      ]);
+      setEditSale({
+        sale: detail,
+        products: productsData.data || [],
+        customers: customersData.data || [],
+      });
+    } catch (error) {
+      toast.error('Error al cargar datos: ' + error.message);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirmDelete) return;
     try {
@@ -129,6 +160,15 @@ export default function Sales() {
     try {
       const detail = await api.getSale(sale.id);
       setShowDetailModal(detail);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handlePrintTicket = async (sale) => {
+    try {
+      const detail = await api.getSale(sale.id);
+      printSaleTicket(detail);
     } catch (error) {
       toast.error(error.message);
     }
@@ -233,6 +273,7 @@ export default function Sales() {
               <th>Items</th>
               <th>Total</th>
               <th>Pago</th>
+              {canUseDelivery(tipo) && <th>Delivery</th>}
               <th>Acciones</th>
             </tr>
           </thead>
@@ -249,10 +290,36 @@ export default function Sales() {
                 <td>
                   <span className={`badge badge-${sale.tipo_pago}`}>{sale.tipo_pago}</span>
                 </td>
+                {canUseDelivery(tipo) && (
+                  <td>
+                    {sale.es_delivery ? (
+                      <span className={`badge badge-delivery badge-delivery-${sale.estado_delivery || 'pendiente'}`}>
+                        <Bike size={12} />
+                        {DELIVERY_STATE_LABEL[sale.estado_delivery] || 'Delivery'}
+                      </span>
+                    ) : (
+                      <span className="text-muted" style={{ fontSize: '0.75rem' }}>—</span>
+                    )}
+                  </td>
+                )}
                 <td>
                   <div className="actions">
                     <button className="btn-icon" onClick={() => viewDetail(sale)} title="Ver detalle">
                       <Eye size={16} />
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => openEditModal(sale)}
+                      title="Editar venta"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => handlePrintTicket(sale)}
+                      title="Imprimir ticket"
+                    >
+                      <Printer size={16} />
                     </button>
                     <button
                       className="btn-icon danger"
@@ -267,7 +334,7 @@ export default function Sales() {
             ))}
             {sales.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-cell">
+                <td colSpan={canUseDelivery(tipo) ? 8 : 7} className="empty-cell">
                   <div className="empty-state">
                     <ShoppingCart size={48} />
                     <h3>No hay {t('sale_plural').toLowerCase()}</h3>
@@ -296,7 +363,19 @@ export default function Sales() {
       )}
 
       {showDetailModal && (
-        <SaleDetailModal sale={showDetailModal} onClose={() => setShowDetailModal(null)} />
+        <SaleDetailModal sale={showDetailModal} onClose={() => setShowDetailModal(null)} onPrint={() => handlePrintTicket(showDetailModal)} />
+      )}
+
+      {editSale && (
+        <SaleCreateModal
+          onClose={() => setEditSale(null)}
+          products={editSale.products}
+          customers={editSale.customers}
+          onCreateSale={handleCreateSale}
+          onUpdateSale={handleUpdateSale}
+          onQuickCreateCustomer={handleQuickCreateCustomer}
+          initialSale={editSale.sale}
+        />
       )}
 
       <ConfirmDialog

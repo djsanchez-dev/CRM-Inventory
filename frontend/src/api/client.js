@@ -233,11 +233,50 @@ export const api = {
   createSale: (data) =>
     request('/sales', { method: 'POST', body: JSON.stringify(data) }),
 
+  updateSale: (id, data) =>
+    request(`/sales/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+
   deleteSale: (id) =>
     request(`/sales/${id}`, { method: 'DELETE' }),
 
   updateDeliveryStatus: (id, data) =>
     request(`/sales/${id}/delivery`, { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Generate / rotate the public tracking link token for a delivery order
+  createTrackingToken: (id) =>
+    request(`/sales/${id}/tracking`, { method: 'POST' }),
+
+  // ========== Tracking (public, no auth) ==========
+  // Fetch live delivery status from a shared link. Uses createFetch so it
+  // has a timeout, but never attaches Authorization or triggers the
+  // session/refresh logic (the customer has no account).
+  getTracking: async (token) => {
+    const res = await createFetch(`${API_BASE}/tracking/${token}`, {}, 10000);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.error || 'Enlace de seguimiento no válido');
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  },
+
+  // Push the delivery person's GPS position (called by the public /share link).
+  updateTrackingLocation: async (token, lat, lng) => {
+    const res = await createFetch(`${API_BASE}/tracking/${token}/location`, {
+      method: 'PUT',
+      body: JSON.stringify({ lat, lng }),
+    }, 10000);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.error || 'No se pudo actualizar la ubicación');
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  },
 
   // ========== Services (Car Wash / Mecánica) ==========
   getServices: (params = '') =>

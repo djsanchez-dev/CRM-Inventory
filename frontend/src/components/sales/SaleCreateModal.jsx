@@ -3,15 +3,22 @@ import { X, Search, MapPin, Bike } from 'lucide-react';
 import CartItem from './CartItem';
 import CustomerSection from './CustomerSection';
 import PointsSection from './PointsSection';
+import DestinationPicker from '../DestinationPicker';
+import { useBusinessConfig } from '../../context/BusinessConfig';
+import { canUseDelivery } from '../../utils/deliveryTypes';
+import { StickyNote } from '../Icons';
 
 export default function SaleCreateModal({
   onClose,
   products,
   customers,
   onCreateSale,
+  onUpdateSale,
   onQuickCreateCustomer,
   deliveryMode = false,
+  initialSale = null,
 }) {
+  const { tipo } = useBusinessConfig();
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [tipoPago, setTipoPago] = useState('efectivo');
@@ -20,7 +27,59 @@ export default function SaleCreateModal({
   const [puntosToUse, setPuntosToUse] = useState(0);
   const [esDelivery, setEsDelivery] = useState(deliveryMode);
   const [direccionEntrega, setDireccionEntrega] = useState('');
+  const [destino, setDestino] = useState(null); // { lat, lng } from the map picker
   const [repartidor, setRepartidor] = useState('');
+  const [nota, setNota] = useState('');
+
+  const isEditing = !!initialSale;
+  // Delivery only makes sense for businesses that ship, unless this modal was
+  // opened in delivery-only mode (Delivery page) or the sale being edited is
+  // already a delivery order (keep it editable).
+  const deliveryAvailable =
+    canUseDelivery(tipo) || deliveryMode || (isEditing && !!initialSale.es_delivery);
+
+  // Prefill everything when editing an existing sale.
+  useEffect(() => {
+    if (!initialSale) return;
+    setTipoPago(initialSale.tipo_pago || 'efectivo');
+    setNota(initialSale.nota || '');
+    setEsDelivery(!!initialSale.es_delivery);
+    setDireccionEntrega(initialSale.direccion_entrega || '');
+    setRepartidor(initialSale.repartidor || '');
+    setDestino(
+      initialSale.destino_lat != null && initialSale.destino_lng != null
+        ? { lat: initialSale.destino_lat, lng: initialSale.destino_lng }
+        : null
+    );
+    const cust = initialSale.customer_id
+      ? customers.find((c) => c.id === initialSale.customer_id) || null
+      : null;
+    setSelectedCustomer(cust);
+    setPuntosToUse(initialSale.puntos_usados || 0);
+    if (Array.isArray(initialSale.items)) {
+      // Old quantities will be returned to stock on save, so while editing the
+      // same product we can temporarily allow stock + oldQty units.
+      const oldQty = {};
+      initialSale.items.forEach((it) => {
+        oldQty[it.product_id] = (oldQty[it.product_id] || 0) + it.cantidad;
+      });
+      setCart(
+        initialSale.items.map((it) => {
+          const prod = products.find((p) => p.id === it.product_id);
+          return {
+            product_id: it.product_id,
+            product_name: it.product_name || prod?.nombre || `Producto #${it.product_id}`,
+            sku: it.product_sku || prod?.sku || '',
+            precio_unitario: Number(it.precio_unitario) || 0,
+            cantidad: it.cantidad,
+            subtotal: Number(it.subtotal) || 0,
+            stock: (prod ? prod.stock : 0) + (oldQty[it.product_id] || 0),
+          };
+        })
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSale?.id]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
   const descuentoPuntos = selectedCustomer
@@ -81,30 +140,38 @@ export default function SaleCreateModal({
     );
   };
 
-  const handleCreateSale = async () => {
+  const handleSubmitSale = async () => {
     if (cart.length === 0) return;
     if (esDelivery && !direccionEntrega.trim()) {
       // Address is required for delivery orders
-      const input = document.querySelector('#sale-delivery-dir');
+      const input = document.querySelector('#destination-input');
       if (input) input.focus();
       input?.setAttribute('data-invalid', '1');
       setTimeout(() => input?.removeAttribute('data-invalid'), 1500);
       return;
     }
     setSaving(true);
+    const payload = {
+      customer_id: selectedCustomer ? selectedCustomer.id : null,
+      items: cart.map((item) => ({
+        product_id: item.product_id,
+        cantidad: item.cantidad,
+      })),
+      tipo_pago: tipoPago,
+      puntos_usados: descuentoPuntos,
+      nota: nota.trim() || null,
+      es_delivery: esDelivery,
+      direccion_entrega: esDelivery ? direccionEntrega.trim() : null,
+      destino_lat: esDelivery && destino ? destino.lat : null,
+      destino_lng: esDelivery && destino ? destino.lng : null,
+      repartidor: esDelivery && repartidor.trim() ? repartidor.trim() : null,
+    };
     try {
-      await onCreateSale({
-        customer_id: selectedCustomer ? selectedCustomer.id : null,
-        items: cart.map((item) => ({
-          product_id: item.product_id,
-          cantidad: item.cantidad,
-        })),
-        tipo_pago: tipoPago,
-        puntos_usados: descuentoPuntos,
-        es_delivery: esDelivery,
-        direccion_entrega: esDelivery ? direccionEntrega.trim() : null,
-        repartidor: esDelivery && repartidor.trim() ? repartidor.trim() : null,
-      });
+      if (isEditing) {
+        await onUpdateSale(initialSale.id, payload);
+      } else {
+        await onCreateSale(payload);
+      }
       onClose();
     } catch (e) {
       // error handled by parent
@@ -129,7 +196,11 @@ export default function SaleCreateModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{esDelivery ? 'Nuevo Pedido Delivery' : 'Nueva Venta'}</h2>
+          <h2>
+            {isEditing
+              ? esDelivery ? 'Editar Pedido Delivery' : 'Editar Venta'
+              : esDelivery ? 'Nuevo Pedido Delivery' : 'Nueva Venta'}
+          </h2>
           <button className="close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -224,42 +295,60 @@ export default function SaleCreateModal({
                   </select>
                 </div>
 
-                {/* Delivery section — licorería & businesses with delivery */}
-                <div className="delivery-section">
-                  <button
-                    type="button"
-                    className={`delivery-toggle ${esDelivery ? 'active' : ''}`}
-                    onClick={() => setEsDelivery(!esDelivery)}
-                    disabled={deliveryMode}
-                    title={deliveryMode ? 'Pedido de delivery obligatorio en esta sección' : undefined}
-                  >
-                    <Bike size={16} />
-                    <span>Entrega a domicilio (Delivery)</span>
-                  </button>
-                  {esDelivery && (
-                    <div className="delivery-fields">
-                      <div className="form-group">
-                        <label htmlFor="sale-delivery-dir">Dirección de entrega *</label>
-                        <input
-                          id="sale-delivery-dir"
-                          type="text"
+                {/* Delivery section — only for businesses that ship (optional) */}
+                {deliveryAvailable && (
+                  <div className="delivery-section">
+                    <button
+                      type="button"
+                      className={`delivery-toggle ${esDelivery ? 'active' : ''}`}
+                      onClick={() => setEsDelivery(!esDelivery)}
+                      disabled={deliveryMode}
+                      title={
+                        deliveryMode
+                          ? 'Pedido de delivery obligatorio en esta sección'
+                          : 'Activa el delivery solo si el cliente pide entrega a domicilio'
+                      }
+                    >
+                      <Bike size={16} />
+                      <span>Entrega a domicilio (opcional)</span>
+                    </button>
+                    {esDelivery && (
+                      <div className="delivery-fields">
+                        <DestinationPicker
                           value={direccionEntrega}
-                          onChange={(e) => setDireccionEntrega(e.target.value)}
-                          placeholder="Ej: Av. Los Girasoles 123, San Juan"
+                          onChange={(address, coords) => {
+                            setDireccionEntrega(address);
+                            setDestino(coords);
+                          }}
                         />
+                        <div className="form-group">
+                          <label htmlFor="sale-delivery-rep">Repartidor (opcional)</label>
+                          <input
+                            id="sale-delivery-rep"
+                            type="text"
+                            value={repartidor}
+                            onChange={(e) => setRepartidor(e.target.value)}
+                            placeholder="Ej: Pedro"
+                          />
+                        </div>
                       </div>
-                      <div className="form-group">
-                        <label htmlFor="sale-delivery-rep">Repartidor (opcional)</label>
-                        <input
-                          id="sale-delivery-rep"
-                          type="text"
-                          value={repartidor}
-                          onChange={(e) => setRepartidor(e.target.value)}
-                          placeholder="Ej: Pedro"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+
+                {/* Notes — optional for any sale */}
+                <div className="form-group">
+                  <label htmlFor="sale-nota">
+                    <StickyNote size={13} style={{ verticalAlign: 'text-bottom', marginRight: 4 }} />
+                    Notas / Observaciones (opcional)
+                  </label>
+                  <textarea
+                    id="sale-nota"
+                    value={nota}
+                    onChange={(e) => setNota(e.target.value)}
+                    placeholder="Ej: Cliente pidió que llamen al llegar..."
+                    rows={2}
+                  />
                 </div>
 
                 <div className="cart-total">
@@ -286,12 +375,14 @@ export default function SaleCreateModal({
           </button>
           <button
             className="btn btn-primary"
-            onClick={handleCreateSale}
+            onClick={handleSubmitSale}
             disabled={cart.length === 0 || saving}
           >
             {saving
               ? 'Procesando...'
-              : `Completar venta - ${formatCurrency(totalVenta)}`}
+              : isEditing
+                ? `Guardar cambios - ${formatCurrency(totalVenta)}`
+                : `Completar venta - ${formatCurrency(totalVenta)}`}
           </button>
         </div>
       </div>

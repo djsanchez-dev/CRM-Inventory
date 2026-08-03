@@ -305,6 +305,8 @@ function resolveConfig(storedConfig, tipo_negocio) {
     labels,
     extraFields: preset.extraFields,
     vehicleTypes: preset.vehicleTypes || [],
+    // GPS location of the business (used as the origin in delivery maps)
+    ubicacion: storedConfig.ubicacion || null,
     businessTypeInfo: preset,
   };
 }

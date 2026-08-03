@@ -184,13 +184,20 @@ router.put('/config', requireAuth, async (req, res) => {
     }
 
     const currentConfig = JSON.parse(business.config || '{}');
-    const { customLabels, moneda, idioma } = req.body;
+    const { customLabels, moneda, idioma, ubicacion } = req.body;
 
     if (customLabels) {
       currentConfig.labels = { ...(currentConfig.labels || {}), ...customLabels };
     }
     if (moneda) currentConfig.moneda = moneda;
     if (idioma) currentConfig.idioma = idioma;
+    // Store GPS location of the business (origin point for delivery maps)
+    if (ubicacion) {
+      const { lat, lng } = ubicacion;
+      if (typeof lat === 'number' && typeof lng === 'number' && isFinite(lat) && isFinite(lng)) {
+        currentConfig.ubicacion = { lat, lng };
+      }
+    }
     currentConfig.updated_at = new Date().toISOString();
 
     await queryOne(

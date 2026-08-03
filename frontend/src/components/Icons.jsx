@@ -69,18 +69,10 @@ export {
 
 // Aliases for backward compatibility
 export { X as Close } from 'lucide-react';
+export { Printer, StickyNote } from 'lucide-react';
 export { ClipboardList as Categories } from 'lucide-react';
-export { ShieldCheck, ShieldAlert, Building2, Calendar, Activity, Key } from 'lucide-react';
+export { ShieldCheck, ShieldAlert, Building2, Calendar, Activity, Key } from 'lucide-react';// Delivery tracking
+export {  Link2 as LinkIcon,  Share2 as Share,  RefreshCw as Refresh,  Store,  Crosshair,  AlertTriangle,  Navigation,  Loader,} from 'lucide-react';
 
 // Services (Car Wash / Mecánica)
-export {
-  Car,
-  CarFront as Services,
-  Wrench,
-  Droplets,
-  CalendarDays,
-  Bike,
-  Tractor,
-  BusFront,
-  Truck as Van,
-} from 'lucide-react';
+export {  Car,  CarFront as Services,  Wrench,  Droplets,  CalendarDays,  Bike,  Tractor,  BusFront,  Truck as Van,} from 'lucide-react';

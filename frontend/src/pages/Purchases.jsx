@@ -172,9 +172,13 @@ export default function Purchases() {
           )}
           <div className="export-buttons">
             <button className="btn btn-export" onClick={() => exportPurchasesCSV(purchases)}
-              disabled={purchases.length === 0}>CSV</button>
+              disabled={purchases.length === 0} title="Exportar a CSV">
+              <FileDown size={18} /><span>CSV</span>
+            </button>
             <button className="btn btn-export pdf" onClick={() => exportPurchasesPDF(purchases)}
-              disabled={purchases.length === 0}>PDF</button>
+              disabled={purchases.length === 0} title="Exportar a PDF">
+              <FileText size={18} /><span>PDF</span>
+            </button>
           </div>
           <button className="btn btn-primary" onClick={openCreateModal}>
             <Plus size={18} /> Nueva {t('purchase')}

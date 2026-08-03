@@ -118,10 +118,10 @@ export default function Customers() {
               <X size={14} /> Limpiar ({activeFilterCount})
             </button>
           )}
+          <button className="btn btn-primary" onClick={openCreate}>
+            <Plus size={18} /> Nuevo {t('customer')}
+          </button>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          <Plus size={18} /> Nuevo {t('customer')}
-        </button>
       </div>
 
       <div className="customers-grid">

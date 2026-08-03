@@ -115,7 +115,7 @@ export default function Dashboard() {
             onClick={() => exportDashboardCSV(data)}
             title="Exportar a CSV"
           >
-            <FileDown size={16} />
+            <FileDown size={18} />
             <span>CSV</span>
           </button>
           <button
@@ -123,7 +123,7 @@ export default function Dashboard() {
             onClick={() => exportDashboardPDF(data)}
             title="Exportar a PDF"
           >
-            <FileText size={16} />
+            <FileText size={18} />
             <span>PDF</span>
           </button>
         </div>

@@ -1,6 +1,7 @@
-import { X } from 'lucide-react';
+import { X, Printer, Bike, MapPin, StickyNote } from 'lucide-react';
+import { DELIVERY_STATE_LABEL } from '../../utils/deliveryTypes';
 
-export default function SaleDetailModal({ sale, onClose }) {
+export default function SaleDetailModal({ sale, onClose, onPrint }) {
   const formatCurrency = (v) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(v);
 
@@ -58,6 +59,27 @@ export default function SaleDetailModal({ sale, onClose }) {
                 <span className="badge badge-success">+{sale.puntos_ganados} pts</span>
               </div>
             )}
+            {sale.es_delivery && (
+              <div className="detail-row">
+                <span className="detail-label">Delivery</span>
+                <span className={`badge badge-delivery badge-delivery-${sale.estado_delivery || 'pendiente'}`}>
+                  <Bike size={12} />
+                  {DELIVERY_STATE_LABEL[sale.estado_delivery] || 'Delivery'}
+                </span>
+              </div>
+            )}
+            {sale.es_delivery && sale.direccion_entrega && (
+              <div className="detail-row">
+                <span className="detail-label">Dirección</span>
+                <span><MapPin size={13} style={{ verticalAlign: 'text-bottom', marginRight: 3 }} />{sale.direccion_entrega}</span>
+              </div>
+            )}
+            {sale.nota && (
+              <div className="detail-row">
+                <span className="detail-label">Notas</span>
+                <span><StickyNote size={13} style={{ verticalAlign: 'text-bottom', marginRight: 3 }} />{sale.nota}</span>
+              </div>
+            )}
           </div>
 
           <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
@@ -94,6 +116,12 @@ export default function SaleDetailModal({ sale, onClose }) {
           </table>
         </div>
         <div className="modal-footer">
+          {onPrint && (
+            <button className="btn btn-secondary" onClick={() => onPrint(sale)}>
+              <Printer size={16} />
+              Imprimir ticket
+            </button>
+          )}
           <button className="btn btn-secondary" onClick={onClose}>
             Cerrar
           </button>

@@ -90,7 +90,7 @@ export default class ErrorBoundary extends Component {
                 onClick={this.handleReload}
                 style={{
                   padding: '10px 24px',
-                  background: 'linear-gradient(135deg, #6366f1, #7c3aed)',
+                  background: 'linear-gradient(135deg, var(--primary), #7c3aed)',
                   color: 'white',
                   border: 'none',
                   borderRadius: 10,
@@ -98,7 +98,7 @@ export default class ErrorBoundary extends Component {
                   fontSize: '0.9rem',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
-                  boxShadow: '0 2px 8px rgba(99,102,241,0.25)',
+                  boxShadow: 'var(--shadow-button)',
                   transition: 'all 0.2s',
                 }}
               >

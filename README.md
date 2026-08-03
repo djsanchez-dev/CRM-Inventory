@@ -345,6 +345,12 @@ O simplemente conecta tu repositorio de Git en el dashboard de Vercel para deplo
 | `RATE_LIMIT_MAX` | ❌ | Máximo de requests por ventana (default: 2000) |
 | `NODE_ENV` | ❌ | `production` en Vercel (se auto-detects) |
 
+### Frontend (.env del frontend)
+
+| Variable | Requerida | Descripción |
+|----------|:---------:|-------------|
+| `VITE_GOOGLE_MAPS_API_KEY` | ⚠️ | Clave de **Google Maps** para el mapa en tiempo real del delivery (Maps JavaScript API + Geocoding API). Sin ella, el seguimiento funciona sin mapa. Crea el archivo `frontend/.env` con `VITE_GOOGLE_MAPS_API_KEY=...` |
+
 > \* `DATABASE_URL` es obligatoria solo en producción (Vercel). `JWT_SECRET` se recomienda configurarlo siempre en producción.
 
 ---

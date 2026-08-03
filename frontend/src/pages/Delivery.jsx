@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api } from '../api/client';
-import { Plus, Search, X, Bike, MapPin, Clock, User, CheckCircle2, Truck, Package, Eye } from '../components/Icons';
+import { Plus, Search, X, Bike, MapPin, Clock, User, CheckCircle2, Truck, Package, Eye, Share, LinkIcon, Crosshair } from '../components/Icons';
 import { useBusinessConfig } from '../context/BusinessConfig';
 import { useToast } from '../components/Toast';
 import Skeleton from '../components/Skeleton';
 import SaleCreateModal from '../components/sales/SaleCreateModal';
 import SaleDetailModal from '../components/sales/SaleDetailModal';
+import ShareDeliveryModal from '../components/ShareDeliveryModal';
+import EditDestinationModal from '../components/EditDestinationModal';
 
 const ESTADOS = [
   { id: 'pendiente', label: 'Pendiente', icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' },
@@ -18,8 +20,10 @@ const ESTADOS = [
 const NEXT_STATE = { pendiente: 'en_camino', en_camino: 'entregado', entregado: null, cancelado: null };
 const estadoMeta = (id) => ESTADOS.find((e) => e.id === id) || ESTADOS[0];
 
+import { DELIVERY_TYPES } from '../utils/deliveryTypes';
+
 export default function Delivery() {
-  const { tipo, loading: configLoading, moneda } = useBusinessConfig();
+  const { tipo, loading: configLoading, moneda, config, refreshConfig } = useBusinessConfig();
   const toast = useToast();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +33,10 @@ export default function Delivery() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [detailSale, setDetailSale] = useState(null);
+  const [storeLocBusy, setStoreLocBusy] = useState(false);
+  const [shareSale, setShareSale] = useState(null);
+  const [editDestSale, setEditDestSale] = useState(null);
+  const [locationSaved, setLocationSaved] = useState(false);
 
   const loadDeliveries = useCallback(async () => {
     try {
@@ -70,10 +78,12 @@ export default function Delivery() {
 
   const handleCreateDelivery = async (saleData) => {
     try {
-      await api.createSale(saleData);
+      const created = await api.createSale(saleData);
       setShowCreateModal(false);
       toast.success('Pedido delivery registrado correctamente');
       loadDeliveries();
+      // Offer sharing right away — the new order already has a tracking token
+      if (created && created.tracking_token) setShareSale(created);
     } catch (error) {
       toast.error(error.message);
     }
@@ -91,6 +101,12 @@ export default function Delivery() {
     }
   };
 
+  const saveDestination = async (sale, payload) => {
+    await api.updateDeliveryStatus(sale.id, payload);
+    toast.success(`Destino del pedido #${sale.id} actualizado`);
+    loadDeliveries();
+  };
+
   const cancelDelivery = async (sale) => {
     try {
       await api.updateDeliveryStatus(sale.id, { estado_delivery: 'cancelado' });
@@ -99,6 +115,38 @@ export default function Delivery() {
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  // Save the store's GPS location (origin point for delivery maps) using the
+  // browser's geolocation — the admin configures this once from the store.
+  const setStoreLocation = () => {
+    if (!('geolocation' in navigator)) {
+      toast.error('Tu navegador no soporta geolocalización');
+      return;
+    }
+    setStoreLocBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          await api.updateBusinessConfig({ ubicacion: { lat: latitude, lng: longitude } });
+          setLocationSaved(true);
+          // Refresh the cached config silently so the banner stays hidden even
+          // after navigating away and back (no full-page loading flash).
+          await refreshConfig({ silent: true });
+          toast.success('Ubicación de la tienda guardada para el mapa de delivery');
+        } catch (error) {
+          toast.error('Error al guardar la ubicación: ' + error.message);
+        } finally {
+          setStoreLocBusy(false);
+        }
+      },
+      () => {
+        setStoreLocBusy(false);
+        toast.error('No se pudo obtener tu ubicación. Revisa los permisos GPS.');
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
   };
 
   const viewDetail = async (sale) => {
@@ -125,7 +173,7 @@ export default function Delivery() {
       </div>
     );
   }
-  if (tipo !== 'licoreria' && tipo !== 'general') {
+  if (!DELIVERY_TYPES.includes(tipo)) {
     return <Navigate to="/app" replace />;
   }
 
@@ -154,11 +202,39 @@ export default function Delivery() {
             <p>Gestiona los pedidos a domicilio</p>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          <Plus size={18} />
-          <span>Nuevo Pedido Delivery</span>
-        </button>
+        <div className="delivery-header-actions">
+          <button
+            className="btn btn-ghost btn-store-location"
+            onClick={setStoreLocation}
+            disabled={storeLocBusy}
+            title="Guarda la ubicación GPS de la tienda para el mapa de delivery"
+          >
+            <Crosshair size={17} />
+            <span>{storeLocBusy ? 'Guardando...' : 'Ubicación tienda'}</span>
+          </button>
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            <Plus size={18} />
+            <span>Nuevo Pedido Delivery</span>
+          </button>
+        </div>
       </div>
+
+      {config && !config.ubicacion && !locationSaved && deliveries.length > 0 && (
+        <div className="delivery-loc-banner">
+          <Crosshair size={16} />
+          <span>
+            Para que el mapa muestre el punto de origen, guarda la ubicación de tu tienda.
+          </span>
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={setStoreLocation}
+            disabled={storeLocBusy}
+          >
+            <Crosshair size={14} />
+            <span>{storeLocBusy ? 'Guardando...' : 'Configurar'}</span>
+          </button>
+        </div>
+      )}
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -262,6 +338,12 @@ export default function Delivery() {
                       <StatusIcon size={13} />
                       {meta.label}
                     </span>
+                    {d.tracking_token && (d.estado_delivery === 'pendiente' || d.estado_delivery === 'en_camino') && (
+                      <span className="delivery-link-ready">
+                        <LinkIcon size={11} />
+                        Link listo
+                      </span>
+                    )}
                   </div>
                   <div className="delivery-customer">
                     <User size={16} />
@@ -305,6 +387,22 @@ export default function Delivery() {
                         <span>Cancelar</span>
                       </button>
                     )}
+                    {(d.estado_delivery === 'pendiente' || d.estado_delivery === 'en_camino') && (
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => setEditDestSale(d)}
+                        title="Cambiar el destino en el mapa"
+                      >
+                        <MapPin size={15} />
+                        <span>Editar destino</span>
+                      </button>
+                    )}
+                    {(d.estado_delivery === 'pendiente' || d.estado_delivery === 'en_camino') && (
+                      <button className="btn btn-sm btn-primary" title="Compartir links de seguimiento y ubicación" onClick={() => setShareSale(d)}>
+                        <Share size={15} />
+                        <span>Compartir</span>
+                      </button>
+                    )}
                     <button className="btn btn-sm btn-ghost" onClick={() => viewDetail(d)}>
                       <Eye size={15} />
                       <span>Ver</span>
@@ -324,6 +422,16 @@ export default function Delivery() {
           customers={customers}
           onCreateSale={handleCreateDelivery}
           deliveryMode
+        />
+      )}
+      {shareSale && (
+        <ShareDeliveryModal sale={shareSale} onClose={() => setShareSale(null)} />
+      )}
+      {editDestSale && (
+        <EditDestinationModal
+          sale={editDestSale}
+          onClose={() => setEditDestSale(null)}
+          onSaved={(payload) => saveDestination(editDestSale, payload)}
         />
       )}
       {detailSale && (

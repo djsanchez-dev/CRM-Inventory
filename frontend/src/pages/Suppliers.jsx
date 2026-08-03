@@ -101,9 +101,13 @@ export default function Suppliers() {
           <DateRangeFilter onFilter={(f) => setDateFilter(f)} />
           <div className="export-buttons">
             <button className="btn btn-export" onClick={() => exportSuppliersCSV(suppliers)}
-              disabled={suppliers.length === 0}>CSV</button>
+              disabled={suppliers.length === 0} title="Exportar a CSV">
+              <FileDown size={18} /><span>CSV</span>
+            </button>
             <button className="btn btn-export pdf" onClick={() => exportSuppliersPDF(suppliers)}
-              disabled={suppliers.length === 0}>PDF</button>
+              disabled={suppliers.length === 0} title="Exportar a PDF">
+              <FileText size={18} /><span>PDF</span>
+            </button>
           </div>
           <button className="btn btn-primary" onClick={openCreate}>
             <Plus size={18} /> Nuevo {t('supplier')}

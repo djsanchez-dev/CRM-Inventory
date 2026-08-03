@@ -41,10 +41,12 @@ export function BusinessConfigProvider({ children }) {
     loadConfig();
   }, [loadConfig, user?.id, user?.business_id]);
 
-  // Reload config when auth state changes (called from AuthContext)
-  const refreshConfig = useCallback(() => {
-    setLoading(true);
-    loadConfig();
+  // Reload config when auth state changes (called from AuthContext), or on
+  // demand. Pass { silent: true } to skip the loading flag so callers can
+  // refresh cached data without flashing any page-level loading state.
+  const refreshConfig = useCallback(({ silent } = {}) => {
+    if (!silent) setLoading(true);
+    return loadConfig();
   }, [loadConfig]);
 
   // Translation helper: get label for a key, falls back to key name

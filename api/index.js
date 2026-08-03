@@ -107,6 +107,8 @@ app.use(ensureSchema);
 // ============================================
 app.use('/api/auth', require('../backend/src/routes/auth'));
 app.use('/api/business', require('../backend/src/routes/business'));
+// Public delivery tracking (no auth — link shared with the customer)
+app.use('/api/tracking', require('../backend/src/routes/tracking'));
 
 // ============================================
 // Protected Routes (require JWT)

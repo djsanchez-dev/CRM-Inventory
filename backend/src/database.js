@@ -358,11 +358,16 @@ async function initSchema() {
           tipo_pago TEXT DEFAULT 'efectivo',
           estado TEXT DEFAULT 'completada',
           puntos_ganados INTEGER DEFAULT 0,
-          puntos_usados INTEGER DEFAULT 0,
-          es_delivery BOOLEAN DEFAULT FALSE,
+          puntos_usados INTEGER DEFAULT 0,          es_delivery BOOLEAN DEFAULT FALSE,
           direccion_entrega TEXT,
           repartidor TEXT,
+          nota TEXT,
           estado_delivery TEXT DEFAULT 'pendiente',
+          tracking_token TEXT,
+          repartidor_lat REAL,
+          repartidor_lng REAL,
+          destino_lat REAL,
+          destino_lng REAL,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
@@ -434,8 +439,15 @@ async function initSchema() {
       await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS es_delivery BOOLEAN DEFAULT FALSE').catch(() => {});
       await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS direccion_entrega TEXT').catch(() => {});
       await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS repartidor TEXT').catch(() => {});
-      await client.query("ALTER TABLE sales ADD COLUMN IF NOT EXISTS estado_delivery TEXT DEFAULT 'pendiente'").catch(() => {});
-      // Migration: updated_at on sales for DBs created before it existed
+      // Migration: nota (observaciones) on sales
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS nota TEXT').catch(() => {});      await client.query("ALTER TABLE sales ADD COLUMN IF NOT EXISTS estado_delivery TEXT DEFAULT 'pendiente'").catch(() => {});      // Migration: tracking_token on sales for DBs created before it existed
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS tracking_token TEXT').catch(() => {});
+      // Migration: repartidor GPS position on sales for real-time map tracking
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS repartidor_lat REAL').catch(() => {});
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS repartidor_lng REAL').catch(() => {});
+      // Migration: delivery destination coordinates on sales (map pin)
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS destino_lat REAL').catch(() => {});
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS destino_lng REAL').catch(() => {});      // Migration: updated_at on sales for DBs created before it existed
       await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()').catch(() => {});
     } else {
       // ——— SQLite schema ———
@@ -516,11 +528,16 @@ async function initSchema() {
           tipo_pago TEXT DEFAULT 'efectivo',
           estado TEXT DEFAULT 'completada',
           puntos_ganados INTEGER DEFAULT 0,
-          puntos_usados INTEGER DEFAULT 0,
-          es_delivery INTEGER DEFAULT 0,
+          puntos_usados INTEGER DEFAULT 0,          es_delivery INTEGER DEFAULT 0,
           direccion_entrega TEXT,
           repartidor TEXT,
+          nota TEXT,
           estado_delivery TEXT DEFAULT 'pendiente',
+          tracking_token TEXT,
+          repartidor_lat REAL,
+          repartidor_lng REAL,
+          destino_lat REAL,
+          destino_lng REAL,
           created_at TEXT DEFAULT (datetime('now')),
           updated_at TEXT DEFAULT (datetime('now'))
         );
@@ -614,11 +631,29 @@ async function initSchema() {
       try {
         client.exec('ALTER TABLE sales ADD COLUMN repartidor TEXT');
       } catch (e) { /* Column already exists */ }
+      // Migration: nota (observaciones) on sales
       try {
-        client.exec("ALTER TABLE sales ADD COLUMN estado_delivery TEXT DEFAULT 'pendiente'");
-        logger.info('Migration: added sales.estado_delivery (SQLite)');
+        client.exec('ALTER TABLE sales ADD COLUMN nota TEXT');
+        logger.info('Migration: added sales.nota (SQLite)');
+      } catch (e) { /* Column already exists */ }      try {        client.exec("ALTER TABLE sales ADD COLUMN estado_delivery TEXT DEFAULT 'pendiente'");        logger.info('Migration: added sales.estado_delivery (SQLite)');      } catch (e) { /* Column already exists */ }      // Migration: tracking_token on sales for DBs created before it existed
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN tracking_token TEXT');
+        logger.info('Migration: added sales.tracking_token (SQLite)');
       } catch (e) { /* Column already exists */ }
-      // Migration: updated_at on sales for DBs created before it existed
+      // Migration: repartidor GPS position on sales for real-time map tracking
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN repartidor_lat REAL');
+      } catch (e) { /* Column already exists */ }
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN repartidor_lng REAL');
+      } catch (e) { /* Column already exists */ }
+      // Migration: delivery destination coordinates on sales (map pin)
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN destino_lat REAL');
+      } catch (e) { /* Column already exists */ }
+      try {
+        client.exec('ALTER TABLE sales ADD COLUMN destino_lng REAL');
+      } catch (e) { /* Column already exists */ }      // Migration: updated_at on sales for DBs created before it existed
       // NOTE: SQLite forbids ADD COLUMN with a parenthesized-expression default
       // (e.g. DEFAULT (datetime('now'))), so add without DEFAULT — the column
       // only gets written on UPDATE and can be NULL initially.
